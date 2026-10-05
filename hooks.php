@@ -3,10 +3,13 @@
  * WHMCS Addon Module: FeatureDesk - Smart Spec Box & Plan Matrix
  * Hooks File
  *
- * Automatically renders:
- * 1. Promotional Badges on Pricing Cards (Lagom 2 & Standard Cart)
- * 2. Clean Hero Bullet Badges replacing cluttered descriptions
- * 3. Responsive Technical Specifications Comparison Matrix Box below cards
+ * Leaves pricing card headers untouched.
+ * Inside card body / description:
+ * 1. Custom Top HTML Box (e.g. Domain Promo Box)
+ * 2. Clean Hero Bullet Badges + "View Full Tech Specs ↓"
+ * 3. Custom Bottom HTML Box (e.g. Backup Policy Alert Box)
+ * Below Cards:
+ * 4. Responsive Technical Specifications Comparison Matrix Box
  *
  * @package    FeatureDesk
  * @author     MD Samsuzzaman Siyam <samsusiyam@gmail.com>
@@ -45,26 +48,10 @@ if (!function_exists('featuredesk_h')) {
 add_hook('ClientAreaHeadOutput', 1, function ($vars) {
     return '
     <style id="featuredesk-styles">
-        .fd-card-badge {
-            position: absolute !important;
-            top: -12px !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            color: #ffffff !important;
-            font-size: 11px !important;
-            font-weight: 800 !important;
-            padding: 3px 14px !important;
-            border-radius: 12px !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.5px !important;
-            z-index: 15 !important;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
-            white-space: nowrap !important;
-        }
         .fd-card-bullets {
             list-style: none !important;
             padding: 0 !important;
-            margin: 15px 0 10px 0 !important;
+            margin: 14px 0 10px 0 !important;
             text-align: left !important;
         }
         .fd-card-bullets li {
@@ -87,7 +74,7 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
         }
         .fd-scroll-wrap {
             text-align: center;
-            margin: 15px 0 5px;
+            margin: 14px 0 10px;
         }
         .fd-scroll-link {
             font-size: 12.5px;
@@ -98,6 +85,12 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
         }
         .fd-scroll-link:hover {
             color: #0369a1;
+        }
+        .fd-card-custom-box-top {
+            margin-bottom: 12px;
+        }
+        .fd-card-custom-box-bottom {
+            margin-top: 14px;
         }
         .fd-specbox {
             margin: 40px auto 30px;
@@ -169,11 +162,6 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
             color: #0284c7;
             margin-bottom: 8px;
         }
-        .fd-btn-choose {
-            font-size: 11.5px;
-            padding: 4px 12px;
-            border-radius: 6px;
-        }
         .fd-category-row td {
             background: #f8fafc;
             font-weight: 700;
@@ -224,7 +212,7 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
 
 /**
  * Client Footer Output:
- * Renders badges & clean highlights directly on cards AND bottom comparison matrix!
+ * Replaces cluttered content with Top Box + Clean Bullets + Bottom Box, and appends Spec Matrix
  */
 add_hook('ClientAreaFooterOutput', 1, function ($vars) {
     try {
@@ -238,10 +226,10 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
                 'tblproducts.id as pid',
                 'tblproducts.gid',
                 'tblproducts.name as pname',
-                'mod_featuredesk_specs.badge_text',
-                'mod_featuredesk_specs.badge_color',
                 'mod_featuredesk_specs.card_highlights',
-                'mod_featuredesk_specs.detailed_specs'
+                'mod_featuredesk_specs.detailed_specs',
+                'mod_featuredesk_specs.card_top_html',
+                'mod_featuredesk_specs.card_bottom_html'
             )
             ->where('mod_featuredesk_specs.enabled', 1)
             ->get();
@@ -275,13 +263,13 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
         }
 
         $productMap[$s->pid] = [
-            'pid'        => (int)$s->pid,
-            'gid'        => (int)$s->gid,
-            'name'       => $s->pname,
-            'badge'      => (string)$s->badge_text,
-            'color'      => !empty($s->badge_color) ? $s->badge_color : '#0284c7',
-            'highlights' => $hList,
-            'specs'      => $normDetails,
+            'pid'         => (int)$s->pid,
+            'gid'         => (int)$s->gid,
+            'name'        => $s->pname,
+            'highlights'  => $hList,
+            'top_html'    => (string)$s->card_top_html,
+            'bottom_html' => (string)$s->card_bottom_html,
+            'specs'       => $normDetails,
         ];
     }
 
@@ -329,35 +317,42 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
                 if (!matched) return;
                 matchedPlans.push(matched);
 
-                // 1. Promotional Badge injection
-                if (matched.badge && !card.querySelector(".fd-card-badge")) {
-                    card.style.position = "relative";
-                    var b = document.createElement("div");
-                    b.className = "fd-card-badge";
-                    b.innerText = matched.badge;
-                    b.style.backgroundColor = matched.color;
-                    card.appendChild(b);
-                }
-
-                // 2. Clean Highlights injection
-                if (FD_DATA.clean_cards && matched.highlights && matched.highlights.length > 0) {
+                // Replace / organize inside .package-content
+                if (FD_DATA.clean_cards) {
                     var contentEl = card.querySelector(".package-content, .product-desc, .package-body");
                     if (contentEl && !card.querySelector(".fd-card-bullets")) {
-                        var html = "<ul class=\"fd-card-bullets\">";
-                        matched.highlights.forEach(function(item) {
-                            html += "<li><i class=\"fas fa-check-circle fd-icon-check\"></i> " + item + "</li>";
-                        });
-                        html += "</ul>";
+                        var html = "";
 
+                        // 1. Custom Top HTML Box (e.g. Free Domain Offer Box)
+                        if (matched.top_html && matched.top_html.trim() !== "") {
+                            html += "<div class=\"fd-card-custom-box-top\">" + matched.top_html + "</div>";
+                        }
+
+                        // 2. Clean Hero Bullet Badges
+                        if (matched.highlights && matched.highlights.length > 0) {
+                            html += "<ul class=\"fd-card-bullets\">";
+                            matched.highlights.forEach(function(item) {
+                                html += "<li><i class=\"fas fa-check-circle fd-icon-check\"></i> " + item + "</li>";
+                            });
+                            html += "</ul>";
+                        }
+
+                        // 3. View Full Tech Specs Link
                         if (FD_DATA.show_scroll) {
                             html += "<div class=\"fd-scroll-wrap\"><a href=\"#featuredesk-matrix-box\" class=\"fd-scroll-link\">View Full Tech Specs &darr;</a></div>";
                         }
+
+                        // 4. Custom Bottom HTML Box (e.g. Backup Policy Warning Box)
+                        if (matched.bottom_html && matched.bottom_html.trim() !== "") {
+                            html += "<div class=\"fd-card-custom-box-bottom\">" + matched.bottom_html + "</div>";
+                        }
+
                         contentEl.innerHTML = html;
                     }
                 }
             });
 
-            // 3. Bottom Matrix Box Rendering
+            // 5. Bottom Spec Matrix Table
             if (matchedPlans.length > 0 && !document.getElementById("featuredesk-matrix-box")) {
                 var allCats = {};
                 matchedPlans.forEach(function(p) {
@@ -430,7 +425,6 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
         } else {
             initFeatureDesk();
         }
-        // Also run shortly after to catch dynamic ajax re-renders
         setTimeout(initFeatureDesk, 500);
         setTimeout(initFeatureDesk, 1500);
     })();
