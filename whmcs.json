@@ -1,0 +1,35 @@
+{
+  "schema": "1.1",
+  "type": "whmcs-addons",
+  "name": "featuredesk",
+  "license": "proprietary",
+  "category": "products",
+  "logo": {
+    "filename": "logo.png"
+  },
+  "description": {
+    "name": "FeatureDesk - Smart Spec Box & Plan Matrix for WHMCS",
+    "tagline": "Transform cluttered pricing cards into clean hero highlights with a synchronized bottom technical specifications comparison matrix",
+    "long": "FeatureDesk is an ultra-modern WHMCS addon module by Bahari IT that declutters your hosting order forms. Instead of stuffing 20+ lines of technical specs into tall, messy pricing cards, FeatureDesk displays 3-5 clean highlight badges on the card and automatically renders an interactive, categorized Technical Specifications Matrix right below your plans.",
+    "features": [
+      "Product Edit Page integration: Configure card highlights and extended specs directly inside WHMCS Setup -> Products",
+      "Interactive comparison matrix rendered below pricing tables on cart / order forms",
+      "Clean, modern UI dashboard for managing all product specifications across product groups",
+      "Preset feature templates for cPanel Web Hosting, NVMe Turbo Hosting, Cloud VPS, and Dedicated Servers",
+      "Category-based tech specs (Hardware, Storage, Email & Domain limits, Performance & Security)",
+      "Interactive 'View Full Tech Specs' smooth scroll button on pricing cards",
+      "100% responsive, dark-mode ready, zero dependency modern CSS/JS architecture"
+    ]
+  },
+  "support": {
+    "homepage": "https://bahari-it.com",
+    "learn_more": "https://bahari-it.com",
+    "docs_url": "https://bahari-it.com"
+  },
+  "authors": [
+    {
+      "name": "Bahari IT",
+      "homepage": "https://bahari-it.com"
+    }
+  ]
+}
