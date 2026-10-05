@@ -22,13 +22,20 @@ if (!defined("WHMCS")) {
     die("This file cannot be accessed directly");
 }
 
+if (!function_exists('featuredesk_is_enabled')) {
+    function featuredesk_is_enabled($val)
+    {
+        return in_array(strtolower(trim((string)$val)), ['1', 'on', 'true', 'yes'], true);
+    }
+}
+
 if (!function_exists('featuredesk_get_setting')) {
     function featuredesk_get_setting($key, $default = '') {
         try {
             if (Capsule::schema()->hasTable('mod_featuredesk_settings')) {
-                $row = Capsule::table('mod_featuredesk_settings')->where('setting_key', $key)->first();
-                if ($row && $row->setting_value !== null && $row->setting_value !== '') {
-                    return $row->setting_value;
+                $row = Capsule::table('mod_featuredesk_settings')->where('setting', $key)->first();
+                if ($row && $row->value !== null && $row->value !== '') {
+                    return $row->value;
                 }
             }
         } catch (\Exception $e) {}
@@ -273,8 +280,8 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
         ];
     }
 
-    $cleanCards = (featuredesk_get_setting('clean_pricing_cards', '1') === '1');
-    $showScroll = (featuredesk_get_setting('show_scroll_btn', '1') === '1');
+    $cleanCards = featuredesk_is_enabled(featuredesk_get_setting('clean_pricing_cards', '1'));
+    $showScroll = featuredesk_is_enabled(featuredesk_get_setting('show_scroll_btn', '1'));
     $boxTitle = featuredesk_get_setting('box_title', 'Technical Specifications & Limit Comparison');
     $boxSubtitle = featuredesk_get_setting('box_subtitle', 'Transparent look at server resources, limits, and developer tooling across our plans.');
     $theme = featuredesk_get_setting('theme', 'modern_blue');
@@ -323,32 +330,32 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
                                        (matched.bottom_html && matched.bottom_html.trim() !== "");
 
                 if (FD_DATA.clean_cards && hasCustomContent) {
-                    var contentEl = card.querySelector(".package-content, .product-desc, .package-body");
+                    var contentEl = card.querySelector(".package-content") || card.querySelector(".product-desc") || card.querySelector(".package-body");
                     if (contentEl && !card.querySelector(".fd-card-bullets") && !card.querySelector(".fd-card-custom-box-top")) {
                         var html = "";
 
                         // 1. Custom Top HTML Box (e.g. Free Domain Offer Box)
                         if (matched.top_html && matched.top_html.trim() !== "") {
-                            html += "<div class="fd-card-custom-box-top">" + matched.top_html + "</div>";
+                            html += "<div class=\"fd-card-custom-box-top\">" + matched.top_html + "</div>";
                         }
 
                         // 2. Clean Hero Bullet Badges
                         if (matched.highlights && matched.highlights.length > 0) {
-                            html += "<ul class="fd-card-bullets">";
+                            html += "<ul class=\"fd-card-bullets\">";
                             matched.highlights.forEach(function(item) {
-                                html += "<li><i class="fas fa-check-circle fd-icon-check"></i> " + item + "</li>";
+                                html += "<li><i class=\"fas fa-check-circle fd-icon-check\"></i> " + item + "</li>";
                             });
                             html += "</ul>";
 
                             // 3. View Full Tech Specs Link (only if highlights exist and specs exist)
                             if (FD_DATA.show_scroll && matched.specs && Object.keys(matched.specs).length > 0) {
-                                html += "<div class="fd-scroll-wrap"><a href="#featuredesk-matrix-box" class="fd-scroll-link">View Full Tech Specs &darr;</a></div>";
+                                html += "<div class=\"fd-scroll-wrap\"><a href=\"#featuredesk-matrix-box\" class=\"fd-scroll-link\">View Full Tech Specs &darr;</a></div>";
                             }
                         }
 
                         // 4. Custom Bottom HTML Box (e.g. Backup Policy Warning Box)
                         if (matched.bottom_html && matched.bottom_html.trim() !== "") {
-                            html += "<div class="fd-card-custom-box-bottom">" + matched.bottom_html + "</div>";
+                            html += "<div class=\"fd-card-custom-box-bottom\">" + matched.bottom_html + "</div>";
                         }
 
                         contentEl.innerHTML = html;

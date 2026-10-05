@@ -77,8 +77,8 @@ if (!function_exists('featuredesk_ensure_tables')) {
 
             if (!Capsule::schema()->hasTable('mod_featuredesk_settings')) {
                 Capsule::schema()->create('mod_featuredesk_settings', function ($table) {
-                    $table->string('setting_key', 100)->primary();
-                    $table->text('setting_value')->nullable();
+                    $table->string('setting', 100)->primary();
+                    $table->text('value')->nullable();
                 });
 
                 $defaults = [
@@ -90,7 +90,7 @@ if (!function_exists('featuredesk_ensure_tables')) {
                     'box_subtitle'        => 'Transparent look at server resources, limits, and developer tooling across our plans.',
                 ];
                 foreach ($defaults as $k => $v) {
-                    Capsule::table('mod_featuredesk_settings')->insert(['setting_key' => $k, 'setting_value' => $v]);
+                    Capsule::table('mod_featuredesk_settings')->insert(['setting' => $k, 'value' => $v]);
                 }
             }
         } catch (\Exception $e) {
@@ -126,9 +126,9 @@ if (!function_exists('featuredesk_get_setting')) {
     {
         try {
             if (Capsule::schema()->hasTable('mod_featuredesk_settings')) {
-                $row = Capsule::table('mod_featuredesk_settings')->where('setting_key', $key)->first();
-                if ($row && $row->setting_value !== null && $row->setting_value !== '') {
-                    return $row->setting_value;
+                $row = Capsule::table('mod_featuredesk_settings')->where('setting', $key)->first();
+                if ($row && $row->value !== null && $row->value !== '') {
+                    return $row->value;
                 }
             }
         } catch (\Exception $e) {}
@@ -141,10 +141,17 @@ if (!function_exists('featuredesk_save_setting')) {
     {
         try {
             Capsule::table('mod_featuredesk_settings')->updateOrInsert(
-                ['setting_key' => $key],
-                ['setting_value' => $value]
+                ['setting' => $key],
+                ['value' => $value]
             );
         } catch (\Exception $e) {}
+    }
+}
+
+if (!function_exists('featuredesk_is_enabled')) {
+    function featuredesk_is_enabled($val)
+    {
+        return in_array(strtolower(trim((string)$val)), ['1', 'on', 'true', 'yes'], true);
     }
 }
 
@@ -1010,7 +1017,7 @@ if (!function_exists('featuredesk_render_display_settings_page')) {
         $html .= '<div class="fd-form-group">';
         $html .= '  <label class="fd-form-label">Clean Long Descriptions on Pricing Cards</label>';
         $html .= '  <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer;">';
-        $html .= '    <input type="checkbox" name="clean_pricing_cards" value="1"' . ($cleanCards === '1' ? ' checked' : '') . '>';
+        $html .= '    <input type="checkbox" name="clean_pricing_cards" value="1"' . (featuredesk_is_enabled($cleanCards) ? ' checked' : '') . '>';
         $html .= '    <span>Substitute cluttered descriptions with Custom Top Box + Clean Bullets + Custom Bottom Box</span>';
         $html .= '  </label>';
         $html .= '</div>';
@@ -1018,7 +1025,7 @@ if (!function_exists('featuredesk_render_display_settings_page')) {
         $html .= '<div class="fd-form-group">';
         $html .= '  <label class="fd-form-label">Card "View Specs" Link</label>';
         $html .= '  <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer;">';
-        $html .= '    <input type="checkbox" name="show_scroll_btn" value="1"' . ($showScrollBtn === '1' ? ' checked' : '') . '>';
+        $html .= '    <input type="checkbox" name="show_scroll_btn" value="1"' . (featuredesk_is_enabled($showScrollBtn) ? ' checked' : '') . '>';
         $html .= '    <span>Add a clickable smooth-scrolling button at the bottom of each pricing card</span>';
         $html .= '  </label>';
         $html .= '</div>';
