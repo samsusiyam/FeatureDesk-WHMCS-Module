@@ -25,7 +25,7 @@ if (!function_exists('featuredesk_config')) {
         return [
             'name'        => 'FeatureDesk - Smart Spec Box & Plan Matrix',
             'description' => 'Declutter crowded hosting pricing cards into short, punchy hero badges, custom top/bottom promo boxes, and display a responsive, interactive Technical Specifications Comparison Matrix below your product rows.',
-            'version'     => '1.2.0',
+            'version'     => '1.3.0',
             'author'      => '<a href="https://baharihost.com" target="_blank" style="color:#0284c7;font-weight:700;">Bahari IT</a>',
             'language'    => 'english',
             'fields'      => [
@@ -169,6 +169,152 @@ if (!function_exists('featuredesk_shared_css')) {
     function featuredesk_shared_css()
     {
         return '<style>
+            
+            /* Beautiful Floating Delete Confirmation Modal */
+            .fd-modal-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(15, 23, 42, 0.65);
+                backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
+                z-index: 99999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.2s ease, visibility 0.2s ease;
+            }
+            .fd-modal-backdrop.active {
+                opacity: 1;
+                visibility: visible;
+            }
+            .fd-modal-dialog {
+                background: #ffffff;
+                width: 90%;
+                max-width: 440px;
+                border-radius: 16px;
+                box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+                padding: 26px 24px;
+                text-align: center;
+                transform: scale(0.92);
+                transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .fd-modal-backdrop.active .fd-modal-dialog {
+                transform: scale(1);
+            }
+            .fd-modal-icon {
+                width: 56px;
+                height: 56px;
+                background: #fee2e2;
+                color: #ef4444;
+                border-radius: 50%;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 26px;
+                margin-bottom: 16px;
+            }
+            .fd-modal-title {
+                font-size: 18px;
+                font-weight: 700;
+                color: #0f172a;
+                margin: 0 0 8px 0;
+            }
+            .fd-modal-msg {
+                font-size: 13.5px;
+                color: #64748b;
+                line-height: 1.5;
+                margin: 0 0 22px 0;
+            }
+            .fd-modal-actions {
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+            }
+            .fd-modal-btn {
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-size: 13.5px;
+                font-weight: 600;
+                cursor: pointer;
+                border: none;
+                transition: all 0.2s;
+            }
+            .fd-modal-btn-cancel {
+                background: #f1f5f9;
+                color: #475569;
+            }
+            .fd-modal-btn-cancel:hover {
+                background: #e2e8f0;
+                color: #1e293b;
+            }
+            .fd-modal-btn-danger {
+                background: #ef4444;
+                color: #ffffff;
+            }
+            .fd-modal-btn-danger:hover {
+                background: #dc2626;
+            }
+            .fd-color-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 16px;
+                margin-top: 15px;
+            }
+            .fd-color-item {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 12px 14px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+            }
+            .fd-color-label {
+                font-size: 13px;
+                font-weight: 600;
+                color: #334155;
+            }
+            .fd-color-sub {
+                font-size: 11px;
+                color: #64748b;
+                display: block;
+            }
+            .fd-color-pick-wrap {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .fd-color-picker {
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                width: 36px;
+                height: 36px;
+                border: none;
+                cursor: pointer;
+                background: transparent;
+                border-radius: 6px;
+            }
+            .fd-color-picker::-webkit-color-swatch {
+                border-radius: 6px;
+                border: 1px solid #cbd5e1;
+            }
+            .fd-color-hex {
+                width: 78px;
+                font-family: monospace;
+                font-size: 12px;
+                padding: 6px 8px;
+                border: 1px solid #cbd5e1;
+                border-radius: 6px;
+                background: #ffffff;
+                text-transform: uppercase;
+            }
             .fd-wrap {
                 background: #f8fafc;
                 border-radius: 12px;
@@ -794,7 +940,7 @@ if (!function_exists('featuredesk_render_edit_group_page')) {
         $html .= '  </div>';
         $html .= '  <div style="display:flex; gap:10px; align-items:center;">';
         $html .= '    <a href="../cart.php?gid=' . (int)$groupId . '" target="_blank" class="fd-btn fd-btn-default"><i class="fas fa-eye"></i> View Live Store</a>';
-        $html .= "    <a href=\"" . featuredesk_h($moduleLink) . "&action=reset_group&gid=" . (int)$groupId . "\" class=\"fd-btn fd-btn-danger fd-btn-sm\" onclick=\"return confirm('Are you sure you want to RESET this entire group to default WHMCS?');\"><i class=\"fas fa-undo\"></i> Reset Group to Default</a>";
+        $html .= '<button type="button" class="fd-btn fd-btn-danger fd-btn-sm" onclick="fdShowConfirmModal(\'Reset Group to Default WHMCS?\', \'Are you sure you want to completely remove this group from FeatureDesk and restore the stock WHMCS pricing card descriptions?\', function(){ window.location.href=\'' . featuredesk_h($moduleLink) . '&action=reset_group&gid=' . (int)$groupId . '\'; });"><i class="fas fa-undo"></i> Reset Group to Default</button>';
         $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=products" class="fd-btn fd-btn-default"><i class="fas fa-arrow-left"></i> Back</a>';
         $html .= '  </div>';
         $html .= '</div>';
@@ -825,9 +971,9 @@ if (!function_exists('featuredesk_render_edit_group_page')) {
         }
         $html .= '</tr>';
 
-        // 2. Hero Highlights Bullets Row
+        // 2. Hero Highlights Row (Supports Text Lines with optional/custom icons OR Custom HTML)
         $html .= '<tr style="background:#f0fdf4;">';
-        $html .= '<td style="font-weight:700; color:#166534;"><i class="fas fa-check-circle text-success"></i> Hero Highlights (3-5 Bullets)<br><span style="font-size:11px; font-weight:normal; color:#15803d;">One short spec per line (replaces cluttered description on card)</span></td>';
+        $html .= '<td style="font-weight:700; color:#166534;"><i class="fas fa-check-circle text-success"></i> Hero Highlights (Text or HTML)<br><span style="font-size:11px; font-weight:normal; color:#15803d;">• One line per bullet (custom icons or plain text)<br>• Or paste full custom HTML (&lt;ul&gt;, &lt;div&gt;)</span></td>';
         foreach ($products as $p) {
             $spec = isset($specsMap[$p->id]) ? $specsMap[$p->id] : null;
             $hList = ($spec && $spec->card_highlights) ? json_decode($spec->card_highlights, true) : [];
@@ -993,19 +1139,33 @@ if (!function_exists('featuredesk_render_edit_group_page')) {
 if (!function_exists('featuredesk_render_display_settings_page')) {
     function featuredesk_render_display_settings_page($moduleLink)
     {
-        $displayMode   = featuredesk_get_setting('display_mode', 'auto_below_cards');
-        $cleanCards    = featuredesk_get_setting('clean_pricing_cards', '1');
-        $showScrollBtn = featuredesk_get_setting('show_scroll_btn', '1');
-        $theme         = featuredesk_get_setting('theme', 'modern_blue');
-        $boxTitle      = featuredesk_get_setting('box_title', 'Technical Specifications & Limit Comparison');
-        $boxSubtitle   = featuredesk_get_setting('box_subtitle', 'Transparent look at server resources, limits, and developer tooling across our plans.');
+        $displayMode      = featuredesk_get_setting('display_mode', 'auto_below_cards');
+        $cleanCards       = featuredesk_get_setting('clean_pricing_cards', '1');
+        $showScrollBtn    = featuredesk_get_setting('show_scroll_btn', '1');
+        $bulletIconClass  = featuredesk_get_setting('bullet_icon_class', 'fas fa-check-circle');
+        $boxTitle         = featuredesk_get_setting('box_title', 'Technical Specifications & Limit Comparison');
+        $boxSubtitle      = featuredesk_get_setting('box_subtitle', 'Transparent look at server resources, limits, and developer tooling across our plans.');
+
+        // Colors
+        $colorPrimary      = featuredesk_get_setting('color_primary', '#0284c7');
+        $colorBulletIcon   = featuredesk_get_setting('color_bullet_icon', '#10B981');
+        $colorBulletText   = featuredesk_get_setting('color_bullet_text', '#334155');
+        $colorHeaderBg     = featuredesk_get_setting('color_header_bg', '#fafafa');
+        $colorHeaderTitle  = featuredesk_get_setting('color_header_title', '#0f172a');
+        $colorCategoryBg   = featuredesk_get_setting('color_category_bg', '#f8fafc');
+        $colorCategoryText = featuredesk_get_setting('color_category_text', '#475569');
+        $colorRowHover     = featuredesk_get_setting('color_row_hover', '#f8fafc');
+        $colorBorder       = featuredesk_get_setting('color_border', '#e2e8f0');
 
         $html = '<div class="fd-card">';
-        $html .= '<div class="fd-card-title"><i class="fas fa-sliders-h text-primary"></i> Display Settings</div>';
-        $html .= '<div class="fd-card-desc">Control where and how the comparison box renders on your order forms.</div>';
+        $html .= '<div class="fd-card-title"><i class="fas fa-sliders-h text-primary"></i> Display & Styling Settings</div>';
+        $html .= '<div class="fd-card-desc">Control where, how, and in what colors the specifications box and pricing cards render.</div>';
 
         $html .= '<form method="post" action="' . featuredesk_h($moduleLink) . '&action=save_display_settings">';
 
+        // Section 1: Behavior
+        $html .= '<h4 style="margin:20px 0 12px; font-size:15px; color:#1e293b; border-bottom:1px solid #e2e8f0; padding-bottom:8px;"><i class="fas fa-cogs text-primary"></i> General Behavior</h4>';
+        
         $html .= '<div class="fd-form-group">';
         $html .= '  <label class="fd-form-label">Comparison Matrix Placement</label>';
         $html .= '  <select name="display_mode" class="fd-form-select">';
@@ -1018,7 +1178,7 @@ if (!function_exists('featuredesk_render_display_settings_page')) {
         $html .= '  <label class="fd-form-label">Clean Long Descriptions on Pricing Cards</label>';
         $html .= '  <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer;">';
         $html .= '    <input type="checkbox" name="clean_pricing_cards" value="1"' . (featuredesk_is_enabled($cleanCards) ? ' checked' : '') . '>';
-        $html .= '    <span>Substitute cluttered descriptions with Custom Top Box + Clean Bullets + Custom Bottom Box</span>';
+        $html .= '    <span>Substitute cluttered descriptions with Custom Top Box + Highlights + Custom Bottom Box</span>';
         $html .= '  </label>';
         $html .= '</div>';
 
@@ -1031,6 +1191,28 @@ if (!function_exists('featuredesk_render_display_settings_page')) {
         $html .= '</div>';
 
         $html .= '<div class="fd-form-group">';
+        $html .= '  <label class="fd-form-label">Hero Bullet Default Icon Style</label>';
+        $html .= '  <select name="bullet_icon_class" class="fd-form-select">';
+        $icons = [
+            'fas fa-check-circle' => 'Classic Circle Check (fas fa-check-circle)',
+            'fas fa-check'        => 'Simple Checkmark (fas fa-check)',
+            'fas fa-chevron-right'=> 'Chevron Arrow (fas fa-chevron-right)',
+            'fas fa-star'         => 'Star (fas fa-star)',
+            'fas fa-bolt'         => 'Lightning Bolt (fas fa-bolt)',
+            'fas fa-circle'       => 'Small Dot (fas fa-circle)',
+            'none'                => 'None (No default icon - plain text or custom HTML icons only)'
+        ];
+        foreach ($icons as $val => $lbl) {
+            $html .= '<option value="' . featuredesk_h($val) . '"' . ($bulletIconClass === $val ? ' selected' : '') . '>' . featuredesk_h($lbl) . '</option>';
+        }
+        $html .= '  </select>';
+        $html .= '  <span style="font-size:12px; color:#64748b;">Note: If any line in Hero Highlights contains an icon HTML (&lt;i&gt;, &lt;svg&gt;, etc.) or if you use Custom HTML, default icons are automatically bypassed.</span>';
+        $html .= '</div>';
+
+        // Section 2: Text Customization
+        $html .= '<h4 style="margin:28px 0 12px; font-size:15px; color:#1e293b; border-bottom:1px solid #e2e8f0; padding-bottom:8px;"><i class="fas fa-heading text-primary"></i> Spec Box Typography</h4>';
+
+        $html .= '<div class="fd-form-group">';
         $html .= '  <label class="fd-form-label">Spec Box Title</label>';
         $html .= '  <input type="text" name="box_title" class="fd-form-input" value="' . featuredesk_h($boxTitle) . '">';
         $html .= '</div>';
@@ -1040,8 +1222,39 @@ if (!function_exists('featuredesk_render_display_settings_page')) {
         $html .= '  <input type="text" name="box_subtitle" class="fd-form-input" value="' . featuredesk_h($boxSubtitle) . '">';
         $html .= '</div>';
 
-        $html .= '<div style="margin-top:20px;">';
-        $html .= '  <button type="submit" class="fd-btn fd-btn-primary"><i class="fas fa-save"></i> Save Display Settings</button>';
+        // Section 3: Color Palette Customization
+        $html .= '<h4 style="margin:28px 0 12px; font-size:15px; color:#1e293b; border-bottom:1px solid #e2e8f0; padding-bottom:8px;"><i class="fas fa-palette text-primary"></i> Color Palette & Theme Styling</h4>';
+        $html .= '<div class="fd-color-grid">';
+
+        $colorFields = [
+            ['color_primary', 'Primary Accent Color', 'Brand color for links, buttons & prices', $colorPrimary],
+            ['color_bullet_icon', 'Bullet Icon Color', 'Color for checkmarks and active values', $colorBulletIcon],
+            ['color_bullet_text', 'Bullet Text Color', 'Text color for card specs', $colorBulletText],
+            ['color_header_bg', 'Matrix Header Background', 'Spec comparison box top banner', $colorHeaderBg],
+            ['color_header_title', 'Matrix Header Title Color', 'Spec title heading color', $colorHeaderTitle],
+            ['color_category_bg', 'Category Bar Background', 'Spec matrix group divider bar', $colorCategoryBg],
+            ['color_category_text', 'Category Bar Text Color', 'Category title label color', $colorCategoryText],
+            ['color_row_hover', 'Row Hover Highlight', 'Background color on row mouseover', $colorRowHover],
+            ['color_border', 'Border & Divider Color', 'Box and table borders', $colorBorder],
+        ];
+
+        foreach ($colorFields as $cf) {
+            $html .= '<div class="fd-color-item">';
+            $html .= '  <div>';
+            $html .= '    <span class="fd-color-label">' . featuredesk_h($cf[1]) . '</span>';
+            $html .= '    <span class="fd-color-sub">' . featuredesk_h($cf[2]) . '</span>';
+            $html .= '  </div>';
+            $html .= '  <div class="fd-color-pick-wrap">';
+            $html .= '    <input type="color" value="' . featuredesk_h($cf[3]) . '" class="fd-color-picker" onchange="document.getElementById(\'" . $cf[0] . "_hex\').value = this.value">';
+            $html .= '    <input type="text" id="' . $cf[0] . '_hex" name="' . $cf[0] . '" value="' . featuredesk_h($cf[3]) . '" class="fd-color-hex" oninput="this.previousElementSibling.value = this.value">';
+            $html .= '  </div>';
+            $html .= '</div>';
+        }
+
+        $html .= '</div>';
+
+        $html .= '<div style="margin-top:28px;">';
+        $html .= '  <button type="submit" class="fd-btn fd-btn-primary" style="font-size:15px; padding:10px 24px;"><i class="fas fa-save"></i> Save Display & Color Settings</button>';
         $html .= '</div>';
         $html .= '</form></div>';
 
@@ -1115,17 +1328,21 @@ if (!function_exists('featuredesk_output')) {
             $productSpecsMap = [];
             foreach ($categories as $cIndex => $catData) {
                 $catName = !empty($catData['name']) ? trim($catData['name']) : 'General';
+                $catIcon = !empty($catData['icon']) ? trim($catData['icon']) : '';
                 if (isset($catData['features']) && is_array($catData['features'])) {
                     foreach ($catData['features'] as $fIndex => $featData) {
                         $featName = !empty($featData['name']) ? trim($featData['name']) : '';
                         if ($featName === '') continue;
+                        $featIcon = !empty($featData['icon']) ? trim($featData['icon']) : '';
 
                         if (isset($featData['values']) && is_array($featData['values'])) {
                             foreach ($featData['values'] as $pId => $val) {
                                 $productSpecsMap[(int)$pId][] = [
-                                    'group' => $catName,
-                                    'name'  => $featName,
-                                    'value' => trim((string)$val)
+                                    'group'      => $catName,
+                                    'group_icon' => $catIcon,
+                                    'name'       => $featName,
+                                    'icon'       => $featIcon,
+                                    'value'      => trim((string)$val)
                                 ];
                             }
                         }
@@ -1174,8 +1391,18 @@ if (!function_exists('featuredesk_output')) {
             featuredesk_save_setting('display_mode', trim($_POST['display_mode']));
             featuredesk_save_setting('clean_pricing_cards', isset($_POST['clean_pricing_cards']) ? '1' : '0');
             featuredesk_save_setting('show_scroll_btn', isset($_POST['show_scroll_btn']) ? '1' : '0');
+            featuredesk_save_setting('bullet_icon_class', trim($_POST['bullet_icon_class']));
             featuredesk_save_setting('box_title', trim($_POST['box_title']));
             featuredesk_save_setting('box_subtitle', trim($_POST['box_subtitle']));
+            featuredesk_save_setting('color_primary', trim($_POST['color_primary']));
+            featuredesk_save_setting('color_bullet_icon', trim($_POST['color_bullet_icon']));
+            featuredesk_save_setting('color_bullet_text', trim($_POST['color_bullet_text']));
+            featuredesk_save_setting('color_header_bg', trim($_POST['color_header_bg']));
+            featuredesk_save_setting('color_header_title', trim($_POST['color_header_title']));
+            featuredesk_save_setting('color_category_bg', trim($_POST['color_category_bg']));
+            featuredesk_save_setting('color_category_text', trim($_POST['color_category_text']));
+            featuredesk_save_setting('color_row_hover', trim($_POST['color_row_hover']));
+            featuredesk_save_setting('color_border', trim($_POST['color_border']));
 
             header('Location: ' . $moduleLink . '&action=display_settings&saved=1');
             exit;
