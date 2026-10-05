@@ -379,6 +379,7 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
                                        (matched.top_html && matched.top_html.trim() !== "") ||
                                        (matched.bottom_html && matched.bottom_html.trim() !== "");
 
+                // 1. Clean Long Descriptions (Hero Highlights & Custom Top/Bottom Boxes)
                 if (FD_DATA.clean_cards && hasCustomContent) {
                     var contentEl = card.querySelector(".package-content") || card.querySelector(".product-desc") || card.querySelector(".package-body");
                     if (contentEl && !card.querySelector(".fd-card-bullets") && !card.querySelector(".fd-card-custom-box-top") && !card.querySelector(".fd-custom-html-highlights")) {
@@ -396,8 +397,7 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
                             } else {
                                 html += "<ul class=\"fd-card-bullets\">";
                                 matched.highlights.forEach(function(item) {
-                                    // If item already contains an icon, svg, or emoji/tag, do NOT force default bullet
-                                    var hasExistingIcon = /<i|<svg|<span class=["\'].*icon.*["\']|<img/i.test(item);
+                                    var hasExistingIcon = (item.indexOf("<i") !== -1 || item.indexOf("<svg") !== -1 || item.indexOf("icon") !== -1 || item.indexOf("<img") !== -1);
                                     if (hasExistingIcon || !FD_DATA.bullet_icon_class || FD_DATA.bullet_icon_class === "none") {
                                         html += "<li>" + item + "</li>";
                                     } else {
@@ -406,19 +406,38 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
                                 });
                                 html += "</ul>";
                             }
-
-                            // 3. View Full Tech Specs Link (smooth scroll to bottom matrix)
-                            if (FD_DATA.show_scroll && matched.specs && Object.keys(matched.specs).length > 0) {
-                                html += "<div class=\"fd-scroll-wrap\"><a href=\"#featuredesk-matrix-box\" class=\"fd-scroll-link\">View Full Tech Specs &darr;</a></div>";
-                            }
                         }
 
-                        // 4. Custom Bottom HTML Box (e.g. Backup Policy Warning Box)
+                        // 3. Custom Bottom HTML Box (e.g. Backup Policy Warning Box)
                         if (matched.bottom_html && matched.bottom_html.trim() !== "") {
                             html += "<div class=\"fd-card-custom-box-bottom\">" + matched.bottom_html + "</div>";
                         }
 
                         contentEl.innerHTML = html;
+                    }
+                }
+
+                // 2. Card \'View Specs\' Link (Completely decoupled & independent of Clean Long Descriptions!)
+                if (FD_DATA.show_scroll && matched.specs && Object.keys(matched.specs).length > 0 && !card.querySelector(".fd-scroll-wrap")) {
+                    var scrollDiv = document.createElement("div");
+                    scrollDiv.className = "fd-scroll-wrap";
+                    scrollDiv.innerHTML = "<a href=\"#featuredesk-matrix-box\" class=\"fd-scroll-link\">View Full Tech Specs &darr;</a>";
+
+                    var botBox = card.querySelector(".fd-card-custom-box-bottom");
+                    var bullets = card.querySelector(".fd-card-bullets, .fd-custom-html-highlights");
+                    var footerEl = card.querySelector(".package-footer, .order-button, .btn-order, .package-actions");
+                    var cEl = card.querySelector(".package-content") || card.querySelector(".product-desc") || card.querySelector(".package-body");
+
+                    if (botBox) {
+                        botBox.parentNode.insertBefore(scrollDiv, botBox);
+                    } else if (bullets) {
+                        bullets.parentNode.insertBefore(scrollDiv, bullets.nextSibling);
+                    } else if (cEl) {
+                        cEl.appendChild(scrollDiv);
+                    } else if (footerEl) {
+                        footerEl.parentNode.insertBefore(scrollDiv, footerEl);
+                    } else {
+                        card.appendChild(scrollDiv);
                     }
                 }
             });
