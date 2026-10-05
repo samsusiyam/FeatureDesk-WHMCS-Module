@@ -557,6 +557,9 @@ if (!function_exists('featuredesk_render_header')) {
         if (isset($_GET['saved'])) {
             $html .= '<div class="fd-alert-success"><i class="fas fa-check-circle"></i> All group specifications, custom boxes, and highlights saved successfully!</div>';
         }
+        if (isset($_GET['reset'])) {
+            $html .= '<div class="fd-alert-success" style="background:#fee2e2; border-color:#fca5a5; color:#991b1b;"><i class="fas fa-undo"></i> Group has been reset to default WHMCS! Original descriptions are restored.</div>';
+        }
 
         return $html;
     }
@@ -782,8 +785,9 @@ if (!function_exists('featuredesk_render_edit_group_page')) {
         $html .= '    <h3 style="margin:0; font-size:18px;"><i class="fas fa-table text-primary"></i> Visual Group Editor: ' . featuredesk_h($group->name) . '</h3>';
         $html .= '    <span style="color:#64748b; font-size:13px;">Manage Top Custom Boxes, Clean Bullets, Bottom Boxes, and Comparison Specs all in one visual grid!</span>';
         $html .= '  </div>';
-        $html .= '  <div style="display:flex; gap:10px;">';
+        $html .= '  <div style="display:flex; gap:10px; align-items:center;">';
         $html .= '    <a href="../cart.php?gid=' . (int)$groupId . '" target="_blank" class="fd-btn fd-btn-default"><i class="fas fa-eye"></i> View Live Store</a>';
+        $html .= "    <a href=\"" . featuredesk_h($moduleLink) . "&action=reset_group&gid=" . (int)$groupId . "\" class=\"fd-btn fd-btn-danger fd-btn-sm\" onclick=\"return confirm('Are you sure you want to RESET this entire group to default WHMCS?');\"><i class=\"fas fa-undo\"></i> Reset Group to Default</a>";
         $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=products" class="fd-btn fd-btn-default"><i class="fas fa-arrow-left"></i> Back</a>';
         $html .= '  </div>';
         $html .= '</div>';
@@ -1084,6 +1088,17 @@ if (!function_exists('featuredesk_output')) {
         $moduleLink = $vars['modulelink'];
         $action = isset($_GET['action']) ? trim($_GET['action']) : 'products';
 
+        // Handle Reset Group Action
+        if ($action === 'reset_group' && isset($_GET['gid'])) {
+            $groupId = (int)$_GET['gid'];
+            $pids = Capsule::table('tblproducts')->where('gid', $groupId)->pluck('id')->all();
+            if (!empty($pids)) {
+                Capsule::table('mod_featuredesk_specs')->whereIn('product_id', $pids)->delete();
+            }
+            header('Location: ' . $moduleLink . '&action=products&reset=1');
+            exit;
+        }
+
         // 1. Handle Save Group Specs POST (The Visual Spreadsheet Save)
         if ($action === 'save_group_specs' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $groupId = (int)$_POST['group_id'];
@@ -1124,17 +1139,23 @@ if (!function_exists('featuredesk_output')) {
 
                 $detailedJson = json_encode(isset($productSpecsMap[$pId]) ? $productSpecsMap[$pId] : []);
 
-                Capsule::table('mod_featuredesk_specs')->updateOrInsert(
-                    ['product_id' => $pId],
-                    [
-                        'card_top_html'    => $topHtml,
-                        'card_bottom_html' => $botHtml,
-                        'card_highlights'  => $highlightsJson,
-                        'detailed_specs'   => $detailedJson,
-                        'enabled'          => 1,
-                        'updated_at'       => $now,
-                    ]
-                );
+                // If everything is completely empty, delete from FeatureDesk so it resets to default WHMCS
+                $hasContent = (!empty($topHtml) || !empty($botHtml) || !empty($hLines) || !empty($productSpecsMap[$pId]));
+                if ($hasContent) {
+                    Capsule::table('mod_featuredesk_specs')->updateOrInsert(
+                        ['product_id' => $pId],
+                        [
+                            'card_top_html'    => $topHtml,
+                            'card_bottom_html' => $botHtml,
+                            'card_highlights'  => $highlightsJson,
+                            'detailed_specs'   => $detailedJson,
+                            'enabled'          => 1,
+                            'updated_at'       => $now,
+                        ]
+                    );
+                } else {
+                    Capsule::table('mod_featuredesk_specs')->where('product_id', $pId)->delete();
+                }
             }
 
             header('Location: ' . $moduleLink . '&action=edit_group&gid=' . $groupId . '&saved=1');

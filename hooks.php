@@ -317,34 +317,38 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
                 if (!matched) return;
                 matchedPlans.push(matched);
 
-                // Replace / organize inside .package-content
-                if (FD_DATA.clean_cards) {
+                // Replace / organize inside .package-content ONLY if highlights or custom boxes exist
+                var hasCustomContent = (matched.highlights && matched.highlights.length > 0) ||
+                                       (matched.top_html && matched.top_html.trim() !== "") ||
+                                       (matched.bottom_html && matched.bottom_html.trim() !== "");
+
+                if (FD_DATA.clean_cards && hasCustomContent) {
                     var contentEl = card.querySelector(".package-content, .product-desc, .package-body");
-                    if (contentEl && !card.querySelector(".fd-card-bullets")) {
+                    if (contentEl && !card.querySelector(".fd-card-bullets") && !card.querySelector(".fd-card-custom-box-top")) {
                         var html = "";
 
                         // 1. Custom Top HTML Box (e.g. Free Domain Offer Box)
                         if (matched.top_html && matched.top_html.trim() !== "") {
-                            html += "<div class=\"fd-card-custom-box-top\">" + matched.top_html + "</div>";
+                            html += "<div class="fd-card-custom-box-top">" + matched.top_html + "</div>";
                         }
 
                         // 2. Clean Hero Bullet Badges
                         if (matched.highlights && matched.highlights.length > 0) {
-                            html += "<ul class=\"fd-card-bullets\">";
+                            html += "<ul class="fd-card-bullets">";
                             matched.highlights.forEach(function(item) {
-                                html += "<li><i class=\"fas fa-check-circle fd-icon-check\"></i> " + item + "</li>";
+                                html += "<li><i class="fas fa-check-circle fd-icon-check"></i> " + item + "</li>";
                             });
                             html += "</ul>";
-                        }
 
-                        // 3. View Full Tech Specs Link
-                        if (FD_DATA.show_scroll) {
-                            html += "<div class=\"fd-scroll-wrap\"><a href=\"#featuredesk-matrix-box\" class=\"fd-scroll-link\">View Full Tech Specs &darr;</a></div>";
+                            // 3. View Full Tech Specs Link (only if highlights exist and specs exist)
+                            if (FD_DATA.show_scroll && matched.specs && Object.keys(matched.specs).length > 0) {
+                                html += "<div class="fd-scroll-wrap"><a href="#featuredesk-matrix-box" class="fd-scroll-link">View Full Tech Specs &darr;</a></div>";
+                            }
                         }
 
                         // 4. Custom Bottom HTML Box (e.g. Backup Policy Warning Box)
                         if (matched.bottom_html && matched.bottom_html.trim() !== "") {
-                            html += "<div class=\"fd-card-custom-box-bottom\">" + matched.bottom_html + "</div>";
+                            html += "<div class="fd-card-custom-box-bottom">" + matched.bottom_html + "</div>";
                         }
 
                         contentEl.innerHTML = html;
