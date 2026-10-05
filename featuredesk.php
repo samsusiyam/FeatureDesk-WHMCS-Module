@@ -151,130 +151,119 @@ if (!function_exists('featuredesk_h')) {
 
 /**
  * Module Configuration
+ * Kept minimal so all options are configured directly inside the Addon UI
  */
-function featuredesk_config()
-{
-    return [
-        'name'        => 'FeatureDesk - Smart Spec Box & Plan Matrix',
-        'description' => 'Declutters pricing cards into clean highlights and renders an interactive Technical Specifications Comparison Box below your WHMCS order form plans.',
-        'version'     => '1.0.0',
-        'author'      => 'Bahari IT',
-        'language'    => 'english',
-        'fields'      => [
-            'display_mode' => [
-                'FriendlyName' => 'Matrix Display Mode',
-                'Type'         => 'dropdown',
-                'Options'      => 'auto_below_cards,tabs_per_product,manual_shortcode',
-                'Default'      => 'auto_below_cards',
-                'Description'  => 'How the detailed specs box should be inserted into your WHMCS cart pages.',
+if (!function_exists('featuredesk_config')) {
+    function featuredesk_config()
+    {
+        return [
+            'name'        => 'FeatureDesk - Smart Spec Box & Plan Matrix',
+            'description' => '<div style="margin-top:10px;padding:14px;background:#f8f9fa;border:1px solid #e2e8f0;border-radius:8px;border-left:4px solid #0284c7;font-size:13.5px;line-height:1.6;color:#334155;"><div style="font-weight:700;color:#0f172a;margin-bottom:6px;"><i class="fas fa-microchip" style="color:#0284c7;margin-right:6px;"></i>FeatureDesk for WHMCS</div>Declutters pricing cards into clean highlights and renders an interactive Technical Specifications Comparison Box below your WHMCS order forms &mdash; manage all settings and live preview directly in <strong>Addons &rarr; FeatureDesk</strong>.</div>',
+            'version'     => '1.0.0',
+            'author'      => '<a href="https://client.bahariit.com" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:none;"><i class="fas fa-shield-alt" style="margin-right:5px;font-size:12px;"></i> BahariIT</a>',
+            'language'    => 'english',
+            'fields'      => [
+                'module_status' => [
+                    'FriendlyName' => 'Module Status',
+                    'Type'         => 'yesno',
+                    'Description'  => 'Tick to enable FeatureDesk (Configure settings & visual demo in Addons &rarr; FeatureDesk)',
+                    'Default'      => 'yes',
+                ],
             ],
-            'clean_pricing_cards' => [
-                'FriendlyName' => 'Auto-Clean Pricing Cards',
-                'Type'         => 'yesno',
-                'Default'      => 'yes',
-                'Description'  => 'Automatically replace long messy product descriptions on pricing cards with clean card highlights.',
-            ],
-            'show_spec_scroll_btn' => [
-                'FriendlyName' => 'Card "View Specs" Link',
-                'Type'         => 'yesno',
-                'Default'      => 'yes',
-                'Description'  => 'Show a smooth-scrolling "View Technical Specs" button on each pricing card.',
-            ],
-            'spec_box_theme' => [
-                'FriendlyName' => 'Spec Box Styling Theme',
-                'Type'         => 'dropdown',
-                'Options'      => 'modern_blue,slate_dark,minimal_light,emerald_pro',
-                'Default'      => 'modern_blue',
-                'Description'  => 'Visual theme for the comparison specs box.',
-            ],
-        ],
-    ];
+        ];
+    }
 }
 
 /**
  * Module Activation
  */
-function featuredesk_activate()
-{
-    featuredesk_ensure_tables();
+if (!function_exists('featuredesk_activate')) {
+    function featuredesk_activate()
+    {
+        featuredesk_ensure_tables();
 
-    $defaults = [
-        'display_mode'         => 'auto_below_cards',
-        'clean_pricing_cards'  => 'on',
-        'show_spec_scroll_btn' => 'on',
-        'spec_box_theme'       => 'modern_blue',
-        'spec_box_title'       => 'Complete Technical Specifications & Limits',
-        'spec_box_subtitle'    => 'Compare all infrastructure, hardware allocation, security and performance features across our hosting tiers.',
-        'highlight_limit'      => '5',
-    ];
+        $defaults = [
+            'display_mode'         => 'auto_below_cards',
+            'clean_pricing_cards'  => 'on',
+            'show_spec_scroll_btn' => 'on',
+            'spec_box_theme'       => 'modern_blue',
+            'spec_box_title'       => 'Complete Technical Specifications & Limits',
+            'spec_box_subtitle'    => 'Compare all infrastructure, hardware allocation, security and performance features across our hosting tiers.',
+            'highlight_limit'      => '5',
+        ];
 
-    foreach ($defaults as $k => $v) {
-        if (featuredesk_get_setting($k, null) === null) {
-            featuredesk_save_setting($k, $v);
+        foreach ($defaults as $k => $v) {
+            if (featuredesk_get_setting($k, null) === null) {
+                featuredesk_save_setting($k, $v);
+            }
         }
-    }
 
-    try {
-        if (Capsule::table('mod_featuredesk_templates')->count() == 0) {
-            $defaultSchema = json_encode([
-                'Server & Hardware Resources' => [
-                    'Storage Technology'   => '100% Pure NVMe SSD',
-                    'Dedicated RAM'        => '1.5 GB Guaranteed',
-                    'CPU Processing Power' => '1 Core Xeon / EPYC',
-                    'Bandwidth / Traffic'  => 'Unmetered High-Speed',
-                    'I/O Speed Limit'      => '50 MB/s Dedicated',
-                    'IOPS Allocation'      => '2,048 IOPS',
-                    'Entry Processes (EP)' => '30 EP',
-                ],
-                'Domains, Email & Databases' => [
-                    'Hosted Domains'       => '1 Primary Domain',
-                    'Addon Domains'        => '0 (Upgrade available)',
-                    'Subdomains'           => '5 Subdomains',
-                    'Email Mailboxes'      => '5 Business Accounts',
-                    'MySQL Databases'      => '5 Databases',
-                    'Remote MySQL Access'  => 'Enabled',
-                ],
-                'Speed, Security & Features' => [
-                    'Web Server Engine'    => 'LiteSpeed Enterprise (LSWS)',
-                    'Speed Acceleration'   => 'LSCache Turbo Enabled',
-                    'Security Shield'      => 'Imunify360 AI Defense',
-                    'SSL Security'         => 'Free Automated Wildcard SSL',
-                    'Backup Routine'       => 'Automated Daily JetBackup',
-                    'Control Panel'        => 'cPanel Latest Stable',
-                    'PHP Versions'         => 'PHP 7.4 through 8.3 Switcher',
-                    'Developer Access'     => 'SSH / WP-CLI / Git / Cron',
-                ],
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        try {
+            if (Capsule::table('mod_featuredesk_templates')->count() == 0) {
+                $defaultSchema = json_encode([
+                    'Server & Hardware Resources' => [
+                        'Storage Technology'   => '100% Pure NVMe SSD',
+                        'Dedicated RAM'        => '1.5 GB Guaranteed',
+                        'CPU Processing Power' => '1 Core Xeon / EPYC',
+                        'Bandwidth / Traffic'  => 'Unmetered High-Speed',
+                        'I/O Speed Limit'      => '50 MB/s Dedicated',
+                        'IOPS Allocation'      => '2,048 IOPS',
+                        'Entry Processes (EP)' => '30 EP',
+                    ],
+                    'Domains, Email & Databases' => [
+                        'Hosted Domains'       => '1 Primary Domain',
+                        'Addon Domains'        => '0 (Upgrade available)',
+                        'Subdomains'           => '5 Subdomains',
+                        'Email Mailboxes'      => '5 Business Accounts',
+                        'MySQL Databases'      => '5 Databases',
+                        'Remote MySQL Access'  => 'Enabled',
+                    ],
+                    'Speed, Security & Features' => [
+                        'Web Server Engine'    => 'LiteSpeed Enterprise (LSWS)',
+                        'Speed Acceleration'   => 'LSCache Turbo Enabled',
+                        'Security Shield'      => 'Imunify360 AI Defense',
+                        'SSL Security'         => 'Free Automated Wildcard SSL',
+                        'Backup Routine'       => 'Automated Daily JetBackup',
+                        'Control Panel'        => 'cPanel Latest Stable',
+                        'PHP Versions'         => 'PHP 7.4 through 8.3 Switcher',
+                        'Developer Access'     => 'SSH / WP-CLI / Git / Cron',
+                    ],
+                ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
-            Capsule::table('mod_featuredesk_templates')->insert([
-                'name'        => 'Standard cPanel NVMe Hosting',
-                'category'    => 'Shared Hosting',
-                'spec_schema' => $defaultSchema,
-                'created_at'  => date('Y-m-d H:i:s'),
-                'updated_at'  => date('Y-m-d H:i:s'),
-            ]);
+                Capsule::table('mod_featuredesk_templates')->insert([
+                    'name'        => 'Standard cPanel NVMe Hosting',
+                    'category'    => 'Shared Hosting',
+                    'spec_schema' => $defaultSchema,
+                    'created_at'  => date('Y-m-d H:i:s'),
+                    'updated_at'  => date('Y-m-d H:i:s'),
+                ]);
+            }
+        } catch (\Exception $e) {
+            // ignore
         }
-    } catch (\Exception $e) {
-        // ignore
-    }
 
-    return ['status' => 'success', 'description' => 'FeatureDesk has been successfully activated!'];
+        return ['status' => 'success', 'description' => 'FeatureDesk has been successfully activated!'];
+    }
 }
 
 /**
  * Module Deactivation
  */
-function featuredesk_deactivate()
-{
-    return ['status' => 'success', 'description' => 'FeatureDesk has been deactivated.'];
+if (!function_exists('featuredesk_deactivate')) {
+    function featuredesk_deactivate()
+    {
+        return ['status' => 'success', 'description' => 'FeatureDesk has been deactivated.'];
+    }
 }
 
 /**
  * Module Upgrade
  */
-function featuredesk_upgrade($vars)
-{
-    featuredesk_ensure_tables();
+if (!function_exists('featuredesk_upgrade')) {
+    function featuredesk_upgrade($vars)
+    {
+        featuredesk_ensure_tables();
+    }
 }
 
 /**
@@ -521,6 +510,70 @@ if (!function_exists('featuredesk_shared_css')) {
                 font-size: 12px;
                 overflow-x: auto;
             }
+
+            /* Live Preview Component */
+            .fd-demo-container {
+                background: #f8fafc;
+                border: 2px dashed #cbd5e1;
+                border-radius: 12px;
+                padding: 24px;
+                margin-top: 20px;
+            }
+            .fd-demo-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                gap: 20px;
+                margin-bottom: 25px;
+            }
+            .fd-demo-card {
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                padding: 20px;
+                text-align: center;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+                position: relative;
+            }
+            .fd-demo-badge {
+                position: absolute;
+                top: -10px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #f59e0b;
+                color: #ffffff;
+                padding: 2px 12px;
+                font-size: 11px;
+                font-weight: 800;
+                border-radius: 12px;
+                text-transform: uppercase;
+            }
+            .fd-demo-card-title {
+                font-size: 16px;
+                font-weight: 800;
+                color: #0f172a;
+                margin-top: 5px;
+            }
+            .fd-demo-price {
+                font-size: 20px;
+                font-weight: 800;
+                color: #0284c7;
+                margin: 8px 0;
+            }
+            .fd-demo-bullets {
+                list-style: none;
+                padding: 0;
+                margin: 15px 0 10px 0;
+                text-align: left;
+            }
+            .fd-demo-bullets li {
+                padding: 4px 0;
+                font-size: 12.5px;
+                color: #475569;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                border-bottom: 1px dashed #f1f5f9;
+            }
         </style>';
     }
 }
@@ -547,8 +600,8 @@ if (!function_exists('featuredesk_render_header')) {
 
         $html .= '  <div class="fd-nav-wrap">';
         $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=products" class="fd-nav-btn' . ($action === 'products' || $action === 'edit_product' ? ' active' : '') . '"><i class="fas fa-boxes"></i> Product Specs & Highlights</a>';
+        $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=display_settings" class="fd-nav-btn' . ($action === 'display_settings' ? ' active' : '') . '"><i class="fas fa-sliders-h"></i> Display Settings & Live Demo</a>';
         $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=templates" class="fd-nav-btn' . ($action === 'templates' || $action === 'edit_template' ? ' active' : '') . '"><i class="fas fa-layer-group"></i> Spec Templates</a>';
-        $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=display_settings" class="fd-nav-btn' . ($action === 'display_settings' ? ' active' : '') . '"><i class="fas fa-sliders-h"></i> Display & Cart Settings</a>';
         $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=integration_guide" class="fd-nav-btn' . ($action === 'integration_guide' ? ' active' : '') . '"><i class="fas fa-code"></i> Integration Guide</a>';
         $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=developer_info" class="fd-nav-btn' . ($action === 'developer_info' ? ' active' : '') . '"><i class="fas fa-info-circle"></i> Developer & Support</a>';
         $html .= '  </div>';
@@ -689,96 +742,7 @@ if (!function_exists('featuredesk_render_edit_product_page')) {
 }
 
 /**
- * Tab 2: Spec Templates Page
- */
-if (!function_exists('featuredesk_render_templates_page')) {
-    function featuredesk_render_templates_page($moduleLink)
-    {
-        $templates = Capsule::table('mod_featuredesk_templates')->get();
-
-        $html = '<div class="fd-card">';
-        $html .= '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">';
-        $html .= '  <div><div class="fd-card-title"><i class="fas fa-layer-group text-primary"></i> Global Spec Templates</div>';
-        $html .= '  <div class="fd-card-desc">Create and manage reusable specification schemas to easily apply to Shared Hosting, Turbo NVMe, Cloud VPS, or Dedicated Servers.</div></div>';
-        $html .= '  <a href="' . featuredesk_h($moduleLink) . '&action=edit_template&id=0" class="fd-btn fd-btn-primary"><i class="fas fa-plus"></i> Create New Template</a>';
-        $html .= '</div>';
-
-        $html .= '<table class="fd-table">';
-        $html .= '<thead><tr><th>Template Name</th><th>Category</th><th>Features Count</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
-
-        foreach ($templates as $t) {
-            $data = json_decode($t->spec_schema, true);
-            $catCount = is_array($data) ? count($data) : 0;
-            $featCount = 0;
-            if (is_array($data)) {
-                foreach ($data as $sub) {
-                    if (is_array($sub)) { $featCount += count($sub); }
-                }
-            }
-
-            $html .= '<tr>';
-            $html .= '<td><strong>' . featuredesk_h($t->name) . '</strong></td>';
-            $html .= '<td><span class="fd-badge fd-badge-primary">' . featuredesk_h($t->category) . '</span></td>';
-            $html .= '<td>' . (int)$catCount . ' Categories, ' . (int)$featCount . ' Metrics</td>';
-            $html .= '<td>' . featuredesk_h(substr($t->created_at, 0, 10)) . '</td>';
-            $html .= '<td>';
-            $html .= '<a href="' . featuredesk_h($moduleLink) . '&action=edit_template&id=' . (int)$t->id . '" class="fd-btn fd-btn-default"><i class="fas fa-edit"></i> Edit</a> ';
-            $html .= '<a href="' . featuredesk_h($moduleLink) . '&action=delete_template&id=' . (int)$t->id . '" class="fd-btn fd-btn-default" onclick="return confirm(\'Are you sure you want to delete this template?\');"><i class="fas fa-trash text-danger"></i></a>';
-            $html .= '</td>';
-            $html .= '</tr>';
-        }
-
-        $html .= '</tbody></table></div>';
-        return $html;
-    }
-}
-
-/**
- * Tab 2 (Sub): Edit Spec Template Page
- */
-if (!function_exists('featuredesk_render_edit_template_page')) {
-    function featuredesk_render_edit_template_page($moduleLink, $id)
-    {
-        $tpl = Capsule::table('mod_featuredesk_templates')->where('id', $id)->first();
-        $name = $tpl ? $tpl->name : '';
-        $category = $tpl ? $tpl->category : 'Web Hosting';
-        $schema = $tpl ? $tpl->spec_schema : '';
-
-        $html = '<div class="fd-card">';
-        $html .= '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">';
-        $html .= '  <div><h3 style="margin:0;">' . ($id > 0 ? 'Edit Template: ' . featuredesk_h($name) : 'Create New Specification Template') . '</h3></div>';
-        $html .= '  <a href="' . featuredesk_h($moduleLink) . '&action=templates" class="fd-btn fd-btn-default"><i class="fas fa-arrow-left"></i> Back to Templates</a>';
-        $html .= '</div>';
-
-        $html .= '<form method="post" action="' . featuredesk_h($moduleLink) . '&action=save_template">';
-        $html .= '<input type="hidden" name="template_id" value="' . (int)$id . '">';
-
-        $html .= '<div class="fd-form-group">';
-        $html .= '  <label class="fd-form-label">Template Name</label>';
-        $html .= '  <input type="text" name="name" class="fd-form-input" value="' . featuredesk_h($name) . '" placeholder="e.g. cPanel NVMe Tier Matrix" required>';
-        $html .= '</div>';
-
-        $html .= '<div class="fd-form-group">';
-        $html .= '  <label class="fd-form-label">Category</label>';
-        $html .= '  <input type="text" name="category" class="fd-form-input" value="' . featuredesk_h($category) . '" placeholder="e.g. Shared Hosting, Cloud VPS">';
-        $html .= '</div>';
-
-        $html .= '<div class="fd-form-group">';
-        $html .= '  <label class="fd-form-label">Specification Schema JSON</label>';
-        $html .= '  <textarea name="spec_schema" class="fd-form-textarea" rows="16" style="font-family:monospace; font-size:12px;" required>' . featuredesk_h($schema) . '</textarea>';
-        $html .= '</div>';
-
-        $html .= '<div style="margin-top:20px;">';
-        $html .= '  <button type="submit" class="fd-btn fd-btn-primary"><i class="fas fa-save"></i> Save Template</button>';
-        $html .= '</div>';
-
-        $html .= '</form></div>';
-        return $html;
-    }
-}
-
-/**
- * Tab 3: Display & Cart Settings
+ * Tab 2: Display Settings & Interactive Live Demo
  */
 if (!function_exists('featuredesk_render_display_settings_page')) {
     function featuredesk_render_display_settings_page($moduleLink)
@@ -792,7 +756,7 @@ if (!function_exists('featuredesk_render_display_settings_page')) {
 
         $html = '<div class="fd-card">';
         $html .= '<div class="fd-card-title"><i class="fas fa-sliders-h text-primary"></i> Order Form Display & Behavior Settings</div>';
-        $html .= '<div class="fd-card-desc">Customize how the technical specification matrix and card highlights integrate into your WHMCS cart pages.</div>';
+        $html .= '<div class="fd-card-desc">Configure the comparison matrix and test how your clean cards and bottom specs box will look live in WHMCS.</div>';
 
         $html .= '<form method="post" action="' . featuredesk_h($moduleLink) . '&action=save_display_settings">';
 
@@ -842,8 +806,172 @@ if (!function_exists('featuredesk_render_display_settings_page')) {
         $html .= '  <input type="text" name="spec_box_subtitle" class="fd-form-input" value="' . featuredesk_h($boxSubtitle) . '">';
         $html .= '</div>';
 
-        $html .= '<div style="margin-top:24px;">';
+        $html .= '<div style="margin-top:20px;">';
         $html .= '  <button type="submit" class="fd-btn fd-btn-primary"><i class="fas fa-save"></i> Save Display Settings</button>';
+        $html .= '</div>';
+        $html .= '</form>';
+
+        // LIVE DEMO PREVIEW
+        $html .= '<div style="margin-top:40px;">';
+        $html .= '  <div class="fd-card-title"><i class="fas fa-eye text-success"></i> Interactive Live Demo Preview</div>';
+        $html .= '  <div class="fd-card-desc">Here is an exact live preview of how your top pricing cards and bottom technical specifications box appear to visitors:</div>';
+
+        $html .= '  <div class="fd-demo-container">';
+        $html .= '    <div style="font-weight:700; color:#64748b; font-size:12px; text-transform:uppercase; margin-bottom:12px;"><i class="fas fa-desktop"></i> Top Hero Cards (Clean & Clutter-Free)</div>';
+        $html .= '    <div class="fd-demo-grid">';
+
+        // Demo Card 1
+        $html .= '      <div class="fd-demo-card">';
+        $html .= '        <div class="fd-demo-card-title">1 GB Hosting</div>';
+        $html .= '        <div class="fd-demo-price">৳399 <span style="font-size:12px; color:#64748b; font-weight:normal;">/yr</span></div>';
+        $html .= '        <ul class="fd-demo-bullets">';
+        $html .= '          <li><i class="fas fa-check-circle" style="color:#10b981;"></i> 1 GB Pure NVMe SSD</li>';
+        $html .= '          <li><i class="fas fa-check-circle" style="color:#10b981;"></i> 1.5 GB Guaranteed RAM</li>';
+        $html .= '          <li><i class="fas fa-check-circle" style="color:#10b981;"></i> 1 Core Xeon CPU</li>';
+        $html .= '          <li><i class="fas fa-check-circle" style="color:#10b981;"></i> 100 GB Bandwidth</li>';
+        $html .= '        </ul>';
+        $html .= '        <a href="#demo-spec-matrix" style="font-size:12px; color:#0284c7; font-weight:700; text-decoration:underline;">View Tech Specs &darr;</a>';
+        $html .= '      </div>';
+
+        // Demo Card 2 (Popular)
+        $html .= '      <div class="fd-demo-card" style="border-color:#0284c7; box-shadow:0 8px 24px rgba(2,132,199,0.12);">';
+        $html .= '        <div class="fd-demo-badge">Most Popular</div>';
+        $html .= '        <div class="fd-demo-card-title">5 GB Hosting</div>';
+        $html .= '        <div class="fd-demo-price">৳799 <span style="font-size:12px; color:#64748b; font-weight:normal;">/yr</span></div>';
+        $html .= '        <ul class="fd-demo-bullets">';
+        $html .= '          <li><i class="fas fa-check-circle" style="color:#10b981;"></i> 5 GB Pure NVMe SSD</li>';
+        $html .= '          <li><i class="fas fa-check-circle" style="color:#10b981;"></i> 2 GB Guaranteed RAM</li>';
+        $html .= '          <li><i class="fas fa-check-circle" style="color:#10b981;"></i> 2 Core Xeon CPU</li>';
+        $html .= '          <li><i class="fas fa-check-circle" style="color:#10b981;"></i> Unlimited Bandwidth</li>';
+        $html .= '        </ul>';
+        $html .= '        <a href="#demo-spec-matrix" style="font-size:12px; color:#0284c7; font-weight:700; text-decoration:underline;">View Tech Specs &darr;</a>';
+        $html .= '      </div>';
+
+        // Demo Card 3
+        $html .= '      <div class="fd-demo-card">';
+        $html .= '        <div class="fd-demo-card-title">10 GB Hosting</div>';
+        $html .= '        <div class="fd-demo-price">৳1,700 <span style="font-size:12px; color:#64748b; font-weight:normal;">/yr</span></div>';
+        $html .= '        <ul class="fd-demo-bullets">';
+        $html .= '          <li><i class="fas fa-check-circle" style="color:#10b981;"></i> 10 GB Pure NVMe SSD</li>';
+        $html .= '          <li><i class="fas fa-check-circle" style="color:#10b981;"></i> 3 GB Guaranteed RAM</li>';
+        $html .= '          <li><i class="fas fa-check-circle" style="color:#10b981;"></i> 2 Core Xeon CPU</li>';
+        $html .= '          <li><i class="fas fa-check-circle" style="color:#10b981;"></i> 3 Addon Domains</li>';
+        $html .= '        </ul>';
+        $html .= '        <a href="#demo-spec-matrix" style="font-size:12px; color:#0284c7; font-weight:700; text-decoration:underline;">View Tech Specs &darr;</a>';
+        $html .= '      </div>';
+        $html .= '    </div>';
+
+        // Demo Bottom Matrix
+        $html .= '    <div id="demo-spec-matrix" style="background:#ffffff; border-radius:10px; border:1px solid #e2e8f0; overflow:hidden;">';
+        $html .= '      <div style="padding:16px 20px; background:#f0f9ff; border-bottom:1px solid #bae6fd; text-align:center;">';
+        $html .= '        <h4 style="margin:0; color:#0369a1; font-weight:800;"><i class="fas fa-microchip"></i> ' . featuredesk_h($boxTitle) . '</h4>';
+        $html .= '        <p style="margin:4px 0 0 0; font-size:12px; color:#64748b;">' . featuredesk_h($boxSubtitle) . '</p>';
+        $html .= '      </div>';
+
+        $html .= '      <table class="fd-table" style="margin-top:0;">';
+        $html .= '        <thead><tr><th style="width:40%;">Feature & Limit</th><th style="text-align:center;">1 GB Hosting</th><th style="text-align:center;">5 GB Hosting</th><th style="text-align:center;">10 GB Hosting</th></tr></thead><tbody>';
+        $html .= '        <tr style="background:#f8fafc;"><td colspan="4" style="font-weight:700; color:#0284c7;"><i class="fas fa-server"></i> Server & Hardware Resources</td></tr>';
+        $html .= '        <tr><td>Storage Technology</td><td style="text-align:center;">1 GB NVMe SSD</td><td style="text-align:center;">5 GB NVMe SSD</td><td style="text-align:center;">10 GB NVMe SSD</td></tr>';
+        $html .= '        <tr><td>Guaranteed RAM</td><td style="text-align:center;">1.5 GB</td><td style="text-align:center;">2.0 GB</td><td style="text-align:center;">3.0 GB</td></tr>';
+        $html .= '        <tr><td>CPU Processing Power</td><td style="text-align:center;">1 Core</td><td style="text-align:center;">2 Cores</td><td style="text-align:center;">2 Cores</td></tr>';
+        $html .= '        <tr><td>Monthly Bandwidth</td><td style="text-align:center;">100 GB</td><td style="text-align:center;">Unlimited</td><td style="text-align:center;">Unlimited</td></tr>';
+        $html .= '        <tr style="background:#f8fafc;"><td colspan="4" style="font-weight:700; color:#0284c7;"><i class="fas fa-shield-alt"></i> Speed, Security & Backup</td></tr>';
+        $html .= '        <tr><td>Web Server Engine</td><td style="text-align:center;"><span style="color:#10b981; font-weight:700;">LiteSpeed Enterprise</span></td><td style="text-align:center;"><span style="color:#10b981; font-weight:700;">LiteSpeed Enterprise</span></td><td style="text-align:center;"><span style="color:#10b981; font-weight:700;">LiteSpeed Enterprise</span></td></tr>';
+        $html .= '        <tr><td>Security Shield</td><td style="text-align:center;"><span style="color:#10b981; font-weight:700;">Imunify360 AI</span></td><td style="text-align:center;"><span style="color:#10b981; font-weight:700;">Imunify360 AI</span></td><td style="text-align:center;"><span style="color:#10b981; font-weight:700;">Imunify360 AI</span></td></tr>';
+        $html .= '        <tr><td>Backup Routine</td><td style="text-align:center;"><span style="color:#10b981; font-weight:700;">Daily Automated</span></td><td style="text-align:center;"><span style="color:#10b981; font-weight:700;">Daily Automated</span></td><td style="text-align:center;"><span style="color:#10b981; font-weight:700;">Daily Automated</span></td></tr>';
+        $html .= '        <tr><td>SSL Certificate</td><td style="text-align:center;"><span style="color:#10b981; font-weight:700;">Free Wildcard SSL</span></td><td style="text-align:center;"><span style="color:#10b981; font-weight:700;">Free Wildcard SSL</span></td><td style="text-align:center;"><span style="color:#10b981; font-weight:700;">Free Wildcard SSL</span></td></tr>';
+        $html .= '        </tbody></table></div>';
+
+        $html .= '  </div>';
+        $html .= '</div>';
+
+        $html .= '</div>';
+        return $html;
+    }
+}
+
+/**
+ * Tab 3: Spec Templates Page
+ */
+if (!function_exists('featuredesk_render_templates_page')) {
+    function featuredesk_render_templates_page($moduleLink)
+    {
+        $templates = Capsule::table('mod_featuredesk_templates')->get();
+
+        $html = '<div class="fd-card">';
+        $html .= '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">';
+        $html .= '  <div><div class="fd-card-title"><i class="fas fa-layer-group text-primary"></i> Global Spec Templates</div>';
+        $html .= '  <div class="fd-card-desc">Create and manage reusable specification schemas to easily apply to Shared Hosting, Turbo NVMe, Cloud VPS, or Dedicated Servers.</div></div>';
+        $html .= '  <a href="' . featuredesk_h($moduleLink) . '&action=edit_template&id=0" class="fd-btn fd-btn-primary"><i class="fas fa-plus"></i> Create New Template</a>';
+        $html .= '</div>';
+
+        $html .= '<table class="fd-table">';
+        $html .= '<thead><tr><th>Template Name</th><th>Category</th><th>Features Count</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
+
+        foreach ($templates as $t) {
+            $data = json_decode($t->spec_schema, true);
+            $catCount = is_array($data) ? count($data) : 0;
+            $featCount = 0;
+            if (is_array($data)) {
+                foreach ($data as $sub) {
+                    if (is_array($sub)) { $featCount += count($sub); }
+                }
+            }
+
+            $html .= '<tr>';
+            $html .= '<td><strong>' . featuredesk_h($t->name) . '</strong></td>';
+            $html .= '<td><span class="fd-badge fd-badge-primary">' . featuredesk_h($t->category) . '</span></td>';
+            $html .= '<td>' . (int)$catCount . ' Categories, ' . (int)$featCount . ' Metrics</td>';
+            $html .= '<td>' . featuredesk_h(substr($t->created_at, 0, 10)) . '</td>';
+            $html .= '<td>';
+            $html .= '<a href="' . featuredesk_h($moduleLink) . '&action=edit_template&id=' . (int)$t->id . '" class="fd-btn fd-btn-default"><i class="fas fa-edit"></i> Edit</a> ';
+            $html .= '<a href="' . featuredesk_h($moduleLink) . '&action=delete_template&id=' . (int)$t->id . '" class="fd-btn fd-btn-default" onclick="return confirm(\'Are you sure you want to delete this template?\');"><i class="fas fa-trash text-danger"></i></a>';
+            $html .= '</td>';
+            $html .= '</tr>';
+        }
+
+        $html .= '</tbody></table></div>';
+        return $html;
+    }
+}
+
+/**
+ * Tab 3 (Sub): Edit Spec Template Page
+ */
+if (!function_exists('featuredesk_render_edit_template_page')) {
+    function featuredesk_render_edit_template_page($moduleLink, $id)
+    {
+        $tpl = Capsule::table('mod_featuredesk_templates')->where('id', $id)->first();
+        $name = $tpl ? $tpl->name : '';
+        $category = $tpl ? $tpl->category : 'Web Hosting';
+        $schema = $tpl ? $tpl->spec_schema : '';
+
+        $html = '<div class="fd-card">';
+        $html .= '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">';
+        $html .= '  <div><h3 style="margin:0;">' . ($id > 0 ? 'Edit Template: ' . featuredesk_h($name) : 'Create New Specification Template') . '</h3></div>';
+        $html .= '  <a href="' . featuredesk_h($moduleLink) . '&action=templates" class="fd-btn fd-btn-default"><i class="fas fa-arrow-left"></i> Back to Templates</a>';
+        $html .= '</div>';
+
+        $html .= '<form method="post" action="' . featuredesk_h($moduleLink) . '&action=save_template">';
+        $html .= '<input type="hidden" name="template_id" value="' . (int)$id . '">';
+
+        $html .= '<div class="fd-form-group">';
+        $html .= '  <label class="fd-form-label">Template Name</label>';
+        $html .= '  <input type="text" name="name" class="fd-form-input" value="' . featuredesk_h($name) . '" placeholder="e.g. cPanel NVMe Tier Matrix" required>';
+        $html .= '</div>';
+
+        $html .= '<div class="fd-form-group">';
+        $html .= '  <label class="fd-form-label">Category</label>';
+        $html .= '  <input type="text" name="category" class="fd-form-input" value="' . featuredesk_h($category) . '" placeholder="e.g. Shared Hosting, Cloud VPS">';
+        $html .= '</div>';
+
+        $html .= '<div class="fd-form-group">';
+        $html .= '  <label class="fd-form-label">Specification Schema JSON</label>';
+        $html .= '  <textarea name="spec_schema" class="fd-form-textarea" rows="16" style="font-family:monospace; font-size:12px;" required>' . featuredesk_h($schema) . '</textarea>';
+        $html .= '</div>';
+
+        $html .= '<div style="margin-top:20px;">';
+        $html .= '  <button type="submit" class="fd-btn fd-btn-primary"><i class="fas fa-save"></i> Save Template</button>';
         $html .= '</div>';
 
         $html .= '</form></div>';
@@ -909,119 +1037,121 @@ if (!function_exists('featuredesk_render_developer_page')) {
 /**
  * Main Module Admin Dispatcher
  */
-function featuredesk_output($vars)
-{
-    featuredesk_ensure_tables();
-    $moduleLink = $vars['modulelink'];
-    $action = isset($_GET['action']) ? trim($_GET['action']) : 'products';
+if (!function_exists('featuredesk_output')) {
+    function featuredesk_output($vars)
+    {
+        featuredesk_ensure_tables();
+        $moduleLink = $vars['modulelink'];
+        $action = isset($_GET['action']) ? trim($_GET['action']) : 'products';
 
-    // Handle POST Actions
-    if ($action === 'save_product_specs' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        $pid = (int)$_POST['product_id'];
-        $badgeText = trim((string)$_POST['badge_text']);
-        $highlightsText = trim((string)$_POST['card_highlights']);
-        $detailedSpecs = trim((string)$_POST['detailed_specs']);
+        // Handle POST Actions
+        if ($action === 'save_product_specs' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $pid = (int)$_POST['product_id'];
+            $badgeText = trim((string)$_POST['badge_text']);
+            $highlightsText = trim((string)$_POST['card_highlights']);
+            $detailedSpecs = trim((string)$_POST['detailed_specs']);
 
-        $lines = array_filter(array_map('trim', explode("\n", $highlightsText)));
-        $highlightsJson = json_encode(array_values($lines));
+            $lines = array_filter(array_map('trim', explode("\n", $highlightsText)));
+            $highlightsJson = json_encode(array_values($lines));
 
-        $now = date('Y-m-d H:i:s');
-        $exists = Capsule::table('mod_featuredesk_specs')->where('product_id', $pid)->exists();
+            $now = date('Y-m-d H:i:s');
+            $exists = Capsule::table('mod_featuredesk_specs')->where('product_id', $pid)->exists();
 
-        if ($exists) {
-            Capsule::table('mod_featuredesk_specs')->where('product_id', $pid)->update([
-                'badge_text'      => $badgeText,
-                'card_highlights' => $highlightsJson,
-                'detailed_specs'  => $detailedSpecs,
-                'updated_at'      => $now,
-            ]);
-        } else {
-            Capsule::table('mod_featuredesk_specs')->insert([
-                'product_id'      => $pid,
-                'badge_text'      => $badgeText,
-                'card_highlights' => $highlightsJson,
-                'detailed_specs'  => $detailedSpecs,
-                'created_at'      => $now,
-                'updated_at'      => $now,
-            ]);
+            if ($exists) {
+                Capsule::table('mod_featuredesk_specs')->where('product_id', $pid)->update([
+                    'badge_text'      => $badgeText,
+                    'card_highlights' => $highlightsJson,
+                    'detailed_specs'  => $detailedSpecs,
+                    'updated_at'      => $now,
+                ]);
+            } else {
+                Capsule::table('mod_featuredesk_specs')->insert([
+                    'product_id'      => $pid,
+                    'badge_text'      => $badgeText,
+                    'card_highlights' => $highlightsJson,
+                    'detailed_specs'  => $detailedSpecs,
+                    'created_at'      => $now,
+                    'updated_at'      => $now,
+                ]);
+            }
+
+            header('Location: ' . $moduleLink . '&action=edit_product&pid=' . $pid . '&saved=1');
+            exit;
         }
 
-        header('Location: ' . $moduleLink . '&action=edit_product&pid=' . $pid . '&saved=1');
-        exit;
-    }
+        if ($action === 'save_template' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $tplId = (int)$_POST['template_id'];
+            $name = trim((string)$_POST['name']);
+            $cat = trim((string)$_POST['category']);
+            $schema = trim((string)$_POST['spec_schema']);
 
-    if ($action === 'save_template' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        $tplId = (int)$_POST['template_id'];
-        $name = trim((string)$_POST['name']);
-        $cat = trim((string)$_POST['category']);
-        $schema = trim((string)$_POST['spec_schema']);
-
-        $now = date('Y-m-d H:i:s');
-        if ($tplId > 0) {
-            Capsule::table('mod_featuredesk_templates')->where('id', $tplId)->update([
-                'name'        => $name,
-                'category'    => $cat,
-                'spec_schema' => $schema,
-                'updated_at'  => $now,
-            ]);
-        } else {
-            Capsule::table('mod_featuredesk_templates')->insert([
-                'name'        => $name,
-                'category'    => $cat,
-                'spec_schema' => $schema,
-                'created_at'  => $now,
-                'updated_at'  => $now,
-            ]);
+            $now = date('Y-m-d H:i:s');
+            if ($tplId > 0) {
+                Capsule::table('mod_featuredesk_templates')->where('id', $tplId)->update([
+                    'name'        => $name,
+                    'category'    => $cat,
+                    'spec_schema' => $schema,
+                    'updated_at'  => $now,
+                ]);
+            } else {
+                Capsule::table('mod_featuredesk_templates')->insert([
+                    'name'        => $name,
+                    'category'    => $cat,
+                    'spec_schema' => $schema,
+                    'created_at'  => $now,
+                    'updated_at'  => $now,
+                ]);
+            }
+            header('Location: ' . $moduleLink . '&action=templates&saved=1');
+            exit;
         }
-        header('Location: ' . $moduleLink . '&action=templates&saved=1');
-        exit;
+
+        if ($action === 'delete_template' && isset($_GET['id'])) {
+            Capsule::table('mod_featuredesk_templates')->where('id', (int)$_GET['id'])->delete();
+            header('Location: ' . $moduleLink . '&action=templates&saved=1');
+            exit;
+        }
+
+        if ($action === 'save_display_settings' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            featuredesk_save_setting('display_mode', trim($_POST['display_mode']));
+            featuredesk_save_setting('clean_pricing_cards', isset($_POST['clean_pricing_cards']) ? 'on' : 'off');
+            featuredesk_save_setting('show_spec_scroll_btn', isset($_POST['show_spec_scroll_btn']) ? 'on' : 'off');
+            featuredesk_save_setting('spec_box_theme', trim($_POST['spec_box_theme']));
+            featuredesk_save_setting('spec_box_title', trim($_POST['spec_box_title']));
+            featuredesk_save_setting('spec_box_subtitle', trim($_POST['spec_box_subtitle']));
+
+            header('Location: ' . $moduleLink . '&action=display_settings&saved=1');
+            exit;
+        }
+
+        // Render View
+        echo featuredesk_render_header($moduleLink, $action);
+
+        switch ($action) {
+            case 'edit_product':
+                echo featuredesk_render_edit_product_page($moduleLink, (int)$_GET['pid']);
+                break;
+            case 'templates':
+                echo featuredesk_render_templates_page($moduleLink);
+                break;
+            case 'edit_template':
+                echo featuredesk_render_edit_template_page($moduleLink, (int)(isset($_GET['id']) ? $_GET['id'] : 0));
+                break;
+            case 'display_settings':
+                echo featuredesk_render_display_settings_page($moduleLink);
+                break;
+            case 'integration_guide':
+                echo featuredesk_render_integration_guide_page();
+                break;
+            case 'developer_info':
+                echo featuredesk_render_developer_page();
+                break;
+            case 'products':
+            default:
+                echo featuredesk_render_products_page($moduleLink);
+                break;
+        }
+
+        echo featuredesk_render_footer();
     }
-
-    if ($action === 'delete_template' && isset($_GET['id'])) {
-        Capsule::table('mod_featuredesk_templates')->where('id', (int)$_GET['id'])->delete();
-        header('Location: ' . $moduleLink . '&action=templates&saved=1');
-        exit;
-    }
-
-    if ($action === 'save_display_settings' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        featuredesk_save_setting('display_mode', trim($_POST['display_mode']));
-        featuredesk_save_setting('clean_pricing_cards', isset($_POST['clean_pricing_cards']) ? 'on' : 'off');
-        featuredesk_save_setting('show_spec_scroll_btn', isset($_POST['show_spec_scroll_btn']) ? 'on' : 'off');
-        featuredesk_save_setting('spec_box_theme', trim($_POST['spec_box_theme']));
-        featuredesk_save_setting('spec_box_title', trim($_POST['spec_box_title']));
-        featuredesk_save_setting('spec_box_subtitle', trim($_POST['spec_box_subtitle']));
-
-        header('Location: ' . $moduleLink . '&action=display_settings&saved=1');
-        exit;
-    }
-
-    // Render View
-    echo featuredesk_render_header($moduleLink, $action);
-
-    switch ($action) {
-        case 'edit_product':
-            echo featuredesk_render_edit_product_page($moduleLink, (int)$_GET['pid']);
-            break;
-        case 'templates':
-            echo featuredesk_render_templates_page($moduleLink);
-            break;
-        case 'edit_template':
-            echo featuredesk_render_edit_template_page($moduleLink, (int)(isset($_GET['id']) ? $_GET['id'] : 0));
-            break;
-        case 'display_settings':
-            echo featuredesk_render_display_settings_page($moduleLink);
-            break;
-        case 'integration_guide':
-            echo featuredesk_render_integration_guide_page();
-            break;
-        case 'developer_info':
-            echo featuredesk_render_developer_page();
-            break;
-        case 'products':
-        default:
-            echo featuredesk_render_products_page($moduleLink);
-            break;
-    }
-
-    echo featuredesk_render_footer();
 }
