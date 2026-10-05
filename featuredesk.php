@@ -2,17 +2,12 @@
 /**
  * WHMCS Addon Module: FeatureDesk - Smart Spec Box & Plan Matrix
  *
- * Declutter pricing cards into clean hero highlights and render an interactive
- * Technical Specifications Comparison Box below pricing tables.
- *
- * Designed to strictly mirror the visual design system, typography, tab structures,
- * and high-converting UX of Bahari IT official WHMCS modules.
+ * Modern Visual Matrix Editor & Clutter-Free Pricing Cards for WHMCS
  *
  * @package    FeatureDesk
  * @author     MD Samsuzzaman Siyam <samsusiyam@gmail.com>
  * @copyright  Bahari Host
  * @license    Proprietary
- * @link       https://baharihost.com
  */
 
 use WHMCS\Database\Capsule;
@@ -30,7 +25,7 @@ if (!function_exists('featuredesk_config')) {
         return [
             'name'        => 'FeatureDesk - Smart Spec Box & Plan Matrix',
             'description' => 'Declutter crowded hosting pricing cards into short, punchy hero badges and display a responsive, interactive Technical Specifications Comparison Matrix right below your product rows.',
-            'version'     => '1.0.1',
+            'version'     => '1.1.0',
             'author'      => '<a href="https://baharihost.com" target="_blank" style="color:#0284c7;font-weight:700;">Bahari IT</a>',
             'language'    => 'english',
             'fields'      => [
@@ -39,7 +34,7 @@ if (!function_exists('featuredesk_config')) {
                     'Type'         => 'note',
                     'Description'  => '<div style="background:#e0f2fe; border-left:4px solid #0284c7; padding:12px 16px; border-radius:6px; color:#0369a1; font-size:13px;">'
                                     . '<strong><i class="fas fa-magic"></i> FeatureDesk is Active!</strong><br>'
-                                    . 'All visual display options, live interactive demo, group-wise specs & highlights builder can be customized inside the module interface at <a href="addonmodules.php?module=featuredesk" class="btn btn-xs btn-primary" style="margin-left:8px; font-weight:700;">Open FeatureDesk Dashboard &rarr;</a>'
+                                    . 'Manage your product groups, hero highlights, and visual comparison matrix directly at <a href="addonmodules.php?module=featuredesk" class="btn btn-xs btn-primary" style="margin-left:8px; font-weight:700;">Open FeatureDesk Dashboard &rarr;</a>'
                                     . '</div>',
                 ],
             ],
@@ -75,28 +70,6 @@ if (!function_exists('featuredesk_ensure_tables')) {
                     $table->longText('spec_schema');
                     $table->timestamps();
                 });
-
-                $defaultSchema = json_encode([
-                    ["group" => "General", "name" => "Websites Hosted", "value" => "1 Website"],
-                    ["group" => "Storage & Traffic", "name" => "NVMe SSD Storage", "value" => "10 GB NVMe"],
-                    ["group" => "Storage & Traffic", "name" => "Bandwidth", "value" => "Unlimited"],
-                    ["group" => "Hardware & Performance", "name" => "RAM Allocation", "value" => "2 GB DDR4"],
-                    ["group" => "Hardware & Performance", "name" => "CPU Allocation", "value" => "1 Core Intel Xeon"],
-                    ["group" => "Security & Backups", "name" => "Free SSL Certificate", "value" => "Yes"],
-                    ["group" => "Security & Backups", "name" => "Daily Automated Backup", "value" => "Yes"],
-                    ["group" => "Control Panel & Developer", "name" => "Control Panel", "value" => "cPanel / DirectAdmin"],
-                    ["group" => "Control Panel & Developer", "name" => "NodeJS & Python", "value" => "Yes"]
-                ]);
-
-                Capsule::table('mod_featuredesk_templates')->insert([
-                    [
-                        'name'        => 'Standard Shared / Web Hosting',
-                        'category'    => 'Shared Hosting',
-                        'spec_schema' => $defaultSchema,
-                        'created_at'  => date('Y-m-d H:i:s'),
-                        'updated_at'  => date('Y-m-d H:i:s'),
-                    ]
-                ]);
             }
 
             if (!Capsule::schema()->hasTable('mod_featuredesk_settings')) {
@@ -192,7 +165,7 @@ if (!function_exists('featuredesk_h')) {
 }
 
 /**
- * Module Admin UI Stylesheet
+ * Admin CSS Stylesheet
  */
 if (!function_exists('featuredesk_shared_css')) {
     function featuredesk_shared_css()
@@ -352,8 +325,12 @@ if (!function_exists('featuredesk_shared_css')) {
             }
             .fd-btn-primary { background: #0284c7; color: #ffffff !important; }
             .fd-btn-primary:hover { background: #0369a1; }
+            .fd-btn-success { background: #10b981; color: #ffffff !important; }
+            .fd-btn-success:hover { background: #059669; }
             .fd-btn-default { background: #e2e8f0; color: #334155 !important; }
             .fd-btn-default:hover { background: #cbd5e1; }
+            .fd-btn-danger { background: #fee2e2; color: #dc2626 !important; }
+            .fd-btn-danger:hover { background: #fca5a5; }
             .fd-btn-sm { padding: 4px 10px; font-size: 12px; }
 
             /* Accordion Group View */
@@ -406,9 +383,7 @@ if (!function_exists('featuredesk_shared_css')) {
                 transition: background 0.2s;
                 user-select: none;
             }
-            .fd-accordion-header:hover {
-                background: #f8fafc;
-            }
+            .fd-accordion-header:hover { background: #f8fafc; }
             .fd-accordion-title {
                 display: flex;
                 align-items: center;
@@ -455,75 +430,84 @@ if (!function_exists('featuredesk_shared_css')) {
                 color: #334155;
                 vertical-align: middle;
             }
-            .fd-table tr:last-child td {
-                border-bottom: none;
-            }
-            .fd-table tr:hover td {
-                background: #fafafa;
-            }
+            .fd-table tr:last-child td { border-bottom: none; }
+            .fd-table tr:hover td { background: #fafafa; }
 
-            /* Visual Builder Styles */
-            .fd-builder-category {
+            /* Modern Visual Grid Spreadsheet */
+            .fd-matrix-grid-wrap {
+                overflow-x: auto;
                 background: #ffffff;
-                border: 1px solid #e2e8f0;
+                border: 1px solid #cbd5e1;
                 border-radius: 8px;
-                margin-bottom: 15px;
-                overflow: hidden;
+                margin-top: 20px;
             }
-            .fd-builder-category-header {
-                background: #f8fafc;
-                padding: 10px 16px;
+            .fd-matrix-grid {
+                width: 100%;
+                border-collapse: collapse;
+                min-width: 800px;
+            }
+            .fd-matrix-grid th {
+                background: #0f172a;
+                color: #ffffff;
+                padding: 14px 16px;
+                font-size: 13px;
+                font-weight: 700;
+                text-align: center;
+                border-right: 1px solid #334155;
+            }
+            .fd-matrix-grid th.fd-grid-spec-col {
+                width: 280px;
+                text-align: left;
+                background: #1e293b;
+            }
+            .fd-matrix-grid td {
+                padding: 10px 14px;
                 border-bottom: 1px solid #e2e8f0;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
+                border-right: 1px solid #e2e8f0;
+                vertical-align: middle;
             }
-            .fd-builder-rows {
+            .fd-grid-cat-header td {
+                background: #f1f5f9 !important;
+                font-weight: 800;
+                font-size: 13px;
+                color: #0f172a;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
                 padding: 12px 16px;
             }
-            .fd-builder-row {
-                display: flex;
-                gap: 10px;
-                margin-bottom: 8px;
-                align-items: center;
-            }
-            .fd-builder-row input {
-                flex: 1;
-                padding: 6px 10px;
+            .fd-grid-input {
+                width: 100%;
+                padding: 8px 10px;
                 font-size: 12.5px;
                 border: 1px solid #cbd5e1;
-                border-radius: 4px;
-            }
-            .fd-builder-row button {
-                background: #fee2e2;
-                color: #dc2626;
-                border: 0;
-                padding: 6px 10px;
-                border-radius: 4px;
-                cursor: pointer;
-            }
-            .fd-builder-row button:hover {
-                background: #fca5a5;
-            }
-
-            .fd-form-group { margin-bottom: 18px; }
-            .fd-form-label { display: block; font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 6px; }
-            .fd-form-hint { font-size: 12px; color: #64748b; margin-top: 4px; }
-            .fd-form-input, .fd-form-textarea, .fd-form-select {
-                width: 100%;
-                max-width: 700px;
-                padding: 10px 12px;
-                border: 1px solid #cbd5e1;
-                border-radius: 6px;
-                font-size: 13px;
-                color: #1e293b;
+                border-radius: 5px;
                 background: #ffffff;
+                box-sizing: border-box;
             }
-            .fd-form-input:focus, .fd-form-textarea:focus {
+            .fd-grid-input:focus {
                 border-color: #0284c7;
                 outline: 0;
-                box-shadow: 0 0 0 3px rgba(2,132,199,0.15);
+                box-shadow: 0 0 0 2px rgba(2,132,199,0.2);
             }
+            .fd-grid-textarea {
+                width: 100%;
+                padding: 8px 10px;
+                font-size: 12px;
+                border: 1px solid #cbd5e1;
+                border-radius: 5px;
+                background: #ffffff;
+                box-sizing: border-box;
+                line-height: 1.4;
+            }
+            .fd-btn-del-row {
+                background: transparent;
+                color: #ef4444;
+                border: 0;
+                cursor: pointer;
+                padding: 4px;
+                font-size: 14px;
+            }
+            .fd-btn-del-row:hover { color: #b91c1c; }
             .fd-alert-success {
                 background: #dcfce7;
                 border: 1px solid #86efac;
@@ -536,15 +520,6 @@ if (!function_exists('featuredesk_shared_css')) {
                 display: flex;
                 align-items: center;
                 gap: 8px;
-            }
-            .fd-code-block {
-                background: #0f172a;
-                color: #38bdf8;
-                padding: 16px;
-                border-radius: 8px;
-                font-family: monospace;
-                font-size: 12px;
-                overflow-x: auto;
             }
         </style>';
     }
@@ -567,13 +542,13 @@ if (!function_exists('featuredesk_render_header')) {
         $html .= '        <div class="fd-subtitle">Smart Plan Highlights & Technical Specifications Matrix for WHMCS</div>';
         $html .= '      </div>';
         $html .= '    </div>';
-        $html .= '    <div class="fd-version">v1.0.1 &bull; Bahari IT</div>';
+        $html .= '    <div class="fd-version">v1.1.0 &bull; Bahari IT</div>';
         $html .= '  </div>';
 
         $html .= '  <div class="fd-nav-wrap">';
-        $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=products" class="fd-nav-btn' . ($action === 'products' || $action === 'edit_product' ? ' active' : '') . '"><i class="fas fa-boxes"></i> Product Groups & Specs</a>';
+        $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=products" class="fd-nav-btn' . ($action === 'products' || $action === 'edit_group' ? ' active' : '') . '"><i class="fas fa-boxes"></i> Product Groups & Matrix Editor</a>';
         $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=display_settings" class="fd-nav-btn' . ($action === 'display_settings' ? ' active' : '') . '"><i class="fas fa-sliders-h"></i> Display Settings & Live Demo</a>';
-        $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=templates" class="fd-nav-btn' . ($action === 'templates' || $action === 'edit_template' ? ' active' : '') . '"><i class="fas fa-layer-group"></i> Spec Templates</a>';
+        $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=templates" class="fd-nav-btn' . ($action === 'templates' ? ' active' : '') . '"><i class="fas fa-layer-group"></i> Spec Templates</a>';
         $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=integration_guide" class="fd-nav-btn' . ($action === 'integration_guide' ? ' active' : '') . '"><i class="fas fa-code"></i> Integration Guide</a>';
         $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=developer_info" class="fd-nav-btn' . ($action === 'developer_info' ? ' active' : '') . '"><i class="fas fa-info-circle"></i> Developer & Support</a>';
         $html .= '  </div>';
@@ -581,7 +556,7 @@ if (!function_exists('featuredesk_render_header')) {
         $html .= '  <div class="fd-body">';
 
         if (isset($_GET['saved'])) {
-            $html .= '<div class="fd-alert-success"><i class="fas fa-check-circle"></i> Specifications and settings updated successfully!</div>';
+            $html .= '<div class="fd-alert-success"><i class="fas fa-check-circle"></i> All group specifications and pricing cards saved successfully!</div>';
         }
 
         return $html;
@@ -599,25 +574,23 @@ if (!function_exists('featuredesk_render_footer')) {
 }
 
 /**
- * Tab 1: Group-wise Accordion Products View
+ * Tab 1: Groups Overview Page
  */
 if (!function_exists('featuredesk_render_products_page')) {
     function featuredesk_render_products_page($moduleLink)
     {
         $groups = Capsule::table('tblproductgroups')->orderBy('order', 'asc')->get();
         $products = Capsule::table('tblproducts')->orderBy('order', 'asc')->get();
-
         $specsMap = Capsule::table('mod_featuredesk_specs')->get()->keyBy('product_id');
 
-        // Group products by gid
         $groupedProducts = [];
         foreach ($products as $p) {
             $groupedProducts[$p->gid][] = $p;
         }
 
         $html = '<div class="fd-card">';
-        $html .= '<div class="fd-card-title"><i class="fas fa-cubes text-primary"></i> Product Groups & Hosting Tiers</div>';
-        $html .= '<div class="fd-card-desc">Click on any group below to expand its products. You can customize card highlight bullets (3-5 badges) and granular technical comparison specs for each plan.</div>';
+        $html .= '<div class="fd-card-title"><i class="fas fa-cubes text-primary"></i> Product Groups & Visual Matrix Editor</div>';
+        $html .= '<div class="fd-card-desc">Click <strong>"⚡ Edit Group Specs"</strong> on any group below to open the Modern Visual Spreadsheet. You can customize hero highlights and comparison specs for all plans side-by-side in one place &mdash; NO CODING REQUIRED!</div>';
 
         // Toolbar
         $html .= '<div class="fd-toolbar">';
@@ -650,7 +623,6 @@ if (!function_exists('featuredesk_render_products_page')) {
                 }
             }
 
-            // Auto expand groups that have configurations (like DMCA Ignored)
             $isExpanded = ($configuredCount > 0) ? ' active' : '';
 
             $html .= '<div class="fd-accordion-item' . $isExpanded . '" data-group-name="' . strtolower(featuredesk_h($g->name)) . '">';
@@ -660,18 +632,19 @@ if (!function_exists('featuredesk_render_products_page')) {
             $html .= '      <span>' . featuredesk_h($g->name) . '</span>';
             $html .= '      <span class="fd-badge fd-badge-muted">' . $totalCount . ' Plans</span>';
             if ($configuredCount > 0) {
-                $html .= '    <span class="fd-badge fd-badge-success"><i class="fas fa-check"></i> ' . $configuredCount . ' Configured</span>';
+                $html .= '    <span class="fd-badge fd-badge-success"><i class="fas fa-check"></i> ' . $configuredCount . ' Active</span>';
             }
             $html .= '    </div>';
-            $html .= '    <div style="display:flex; align-items:center; gap:12px;">';
-            $html .= '      <a href="../cart.php?gid=' . (int)$g->id . '" target="_blank" class="fd-btn fd-btn-default fd-btn-sm" onclick="event.stopPropagation();"><i class="fas fa-external-link-alt"></i> View Store</a>';
-            $html .= '      <i class="fas fa-chevron-down fd-accordion-chevron"></i>';
+            $html .= '    <div style="display:flex; align-items:center; gap:10px;" onclick="event.stopPropagation();">';
+            $html .= '      <a href="' . featuredesk_h($moduleLink) . '&action=edit_group&gid=' . (int)$g->id . '" class="fd-btn fd-btn-primary fd-btn-sm"><i class="fas fa-table"></i> ⚡ Edit Group Specs (Modern)</a>';
+            $html .= '      <a href="../cart.php?gid=' . (int)$g->id . '" target="_blank" class="fd-btn fd-btn-default fd-btn-sm"><i class="fas fa-external-link-alt"></i> Store</a>';
+            $html .= '      <i class="fas fa-chevron-down fd-accordion-chevron" style="cursor:pointer;" onclick="fdToggleAccordion(this.closest(\'.fd-accordion-header\'))"></i>';
             $html .= '    </div>';
             $html .= '  </div>';
 
             $html .= '  <div class="fd-accordion-body">';
             $html .= '    <table class="fd-table">';
-            $html .= '      <thead><tr><th>Plan Name</th><th>Badge</th><th>Hero Highlights</th><th>Comparison Specs</th><th>Actions</th></tr></thead>';
+            $html .= '      <thead><tr><th>Plan Name</th><th>Promo Badge</th><th>Hero Highlights</th><th>Comparison Specs</th></tr></thead>';
             $html .= '      <tbody>';
 
             foreach ($prods as $p) {
@@ -685,20 +658,17 @@ if (!function_exists('featuredesk_render_products_page')) {
                 $html .= '  <td>' . (!empty($badge) ? '<span class="fd-badge fd-badge-warning">' . featuredesk_h($badge) . '</span>' : '<span style="color:#cbd5e1;">&mdash;</span>') . '</td>';
                 $html .= '  <td>';
                 if (is_array($highlights) && count($highlights) > 0) {
-                    $html .= '<span class="fd-badge fd-badge-primary"><i class="fas fa-check-circle"></i> ' . count($highlights) . ' Bullets Set</span>';
+                    $html .= '<span class="fd-badge fd-badge-primary"><i class="fas fa-check-circle"></i> ' . count($highlights) . ' Bullets</span>';
                 } else {
                     $html .= '<span style="font-size:12px; color:#94a3b8;">Default description</span>';
                 }
                 $html .= '  </td>';
                 $html .= '  <td>';
                 if (is_array($detailedSpecs) && count($detailedSpecs) > 0) {
-                    $html .= '<span class="fd-badge fd-badge-success"><i class="fas fa-table"></i> ' . count($detailedSpecs) . ' Specs Active</span>';
+                    $html .= '<span class="fd-badge fd-badge-success"><i class="fas fa-table"></i> ' . count($detailedSpecs) . ' Specs</span>';
                 } else {
                     $html .= '<span style="font-size:12px; color:#94a3b8;">None</span>';
                 }
-                $html .= '  </td>';
-                $html .= '  <td>';
-                $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=edit_product&pid=' . (int)$p->id . '" class="fd-btn fd-btn-primary fd-btn-sm"><i class="fas fa-edit"></i> Edit Specs</a>';
                 $html .= '  </td>';
                 $html .= '</tr>';
             }
@@ -711,7 +681,6 @@ if (!function_exists('featuredesk_render_products_page')) {
 
         $html .= '</div></div>';
 
-        // JS for Filtering & Accordion
         $html .= '
         <script>
         function fdToggleAccordion(headerEl) {
@@ -758,80 +727,232 @@ if (!function_exists('featuredesk_render_products_page')) {
 }
 
 /**
- * Tab 1 (Sub): Edit Product Specs Page with Visual Builder & Quick Templates
+ * Tab 1 (Sub): Modern Visual Group Matrix Spreadsheet Editor
  */
-if (!function_exists('featuredesk_render_edit_product_page')) {
-    function featuredesk_render_edit_product_page($moduleLink, $productId)
+if (!function_exists('featuredesk_render_edit_group_page')) {
+    function featuredesk_render_edit_group_page($moduleLink, $groupId)
     {
-        $product = Capsule::table('tblproducts')->where('id', $productId)->first();
-        if (!$product) {
-            return '<div class="fd-card"><p>Product not found.</p></div>';
+        $group = Capsule::table('tblproductgroups')->where('id', $groupId)->first();
+        if (!$group) {
+            return '<div class="fd-card"><p>Product group not found.</p></div>';
         }
 
-        $spec = Capsule::table('mod_featuredesk_specs')->where('product_id', $productId)->first();
-        $badgeText = $spec ? $spec->badge_text : '';
-        $badgeColor = ($spec && !empty($spec->badge_color)) ? $spec->badge_color : '#2563EB';
+        $products = Capsule::table('tblproducts')->where('gid', $groupId)->orderBy('order', 'asc')->get();
+        if ($products->isEmpty()) {
+            return '<div class="fd-card"><p>No products found in this group.</p></div>';
+        }
 
-        $highlightsRaw = $spec && $spec->card_highlights ? json_decode($spec->card_highlights, true) : [];
-        if (!is_array($highlightsRaw)) { $highlightsRaw = []; }
-        $highlightsText = implode("\n", $highlightsRaw);
+        $productIds = $products->pluck('id')->all();
+        $specsMap = Capsule::table('mod_featuredesk_specs')->whereIn('product_id', $productIds)->get()->keyBy('product_id');
 
-        $detailedSpecs = $spec && $spec->detailed_specs ? $spec->detailed_specs : '';
-        if (empty($detailedSpecs)) {
-            $detailedSpecs = json_encode([
-                ["group" => "General", "name" => "Websites Hosted", "value" => "1 Website"],
-                ["group" => "Storage & Traffic", "name" => "NVMe SSD Storage", "value" => "10 GB NVMe"],
-                ["group" => "Storage & Traffic", "name" => "Bandwidth", "value" => "Unlimited"],
-                ["group" => "Hardware & Performance", "name" => "RAM Allocation", "value" => "2 GB Guaranteed"],
-                ["group" => "Hardware & Performance", "name" => "CPU Allocation", "value" => "1 Core Xeon"],
-                ["group" => "Security & Backups", "name" => "Free SSL Certificate", "value" => "Yes"],
-                ["group" => "Security & Backups", "name" => "Weekly Auto Backup", "value" => "Yes"]
-            ], JSON_PRETTY_PRINT);
+        // Collect all categories and features across all products in this group
+        $matrixCategories = [];
+        foreach ($products as $p) {
+            if (isset($specsMap[$p->id])) {
+                $details = json_decode($specsMap[$p->id]->detailed_specs, true);
+                if (is_array($details)) {
+                    foreach ($details as $row) {
+                        if (isset($row['group']) && isset($row['name'])) {
+                            $grp = $row['group'];
+                            $feat = $row['name'];
+                            if (!isset($matrixCategories[$grp])) {
+                                $matrixCategories[$grp] = [];
+                            }
+                            if (!in_array($feat, $matrixCategories[$grp])) {
+                                $matrixCategories[$grp][] = $feat;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Default categories if empty
+        if (empty($matrixCategories)) {
+            $matrixCategories = [
+                'General & Locations' => ['Server Location', 'Websites Hosted'],
+                'Storage & Bandwidth' => ['NVMe SSD Storage', 'Monthly Bandwidth', 'Inodes Limit'],
+                'Hardware & Engine'   => ['Control Panel', 'Web Server', 'CPU Core', 'RAM Memory'],
+                'Security & Backups'  => ['Free SSL Certificate', 'Automated Backups', 'Imunify360 Protection']
+            ];
         }
 
         $html = '<div class="fd-card">';
-        $html .= '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">';
-        $html .= '  <div><h3 style="margin:0; font-size:18px;">Editing Specs: ' . featuredesk_h($product->name) . '</h3><span style="color:#64748b; font-size:13px;">Manage card highlight bullets and detailed technical matrix specs</span></div>';
-        $html .= '  <a href="' . featuredesk_h($moduleLink) . '&action=products" class="fd-btn fd-btn-default"><i class="fas fa-arrow-left"></i> Back to Products</a>';
-        $html .= '</div>';
-
-        $html .= '<form method="post" action="' . featuredesk_h($moduleLink) . '&action=save_product_specs" id="fdSpecForm">';
-        $html .= '<input type="hidden" name="product_id" value="' . (int)$productId . '">';
-
-        // Top Badge
-        $html .= '<div class="row" style="display:flex; gap:20px; margin-bottom:18px;">';
-        $html .= '  <div style="flex:1;">';
-        $html .= '    <label class="fd-form-label"><i class="fas fa-ribbon text-warning"></i> Card Promo Badge (Optional)</label>';
-        $html .= '    <div style="display:flex; gap:8px;">';
-        $html .= '      <input type="text" name="badge_text" class="fd-form-input" value="' . featuredesk_h($badgeText) . '" placeholder="e.g. Starter, Most Popular, Best Value">';
-        $html .= '      <input type="color" name="badge_color" value="' . featuredesk_h($badgeColor) . '" style="width:48px; height:38px; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer;">';
-        $html .= '    </div>';
-        $html .= '    <div class="fd-form-hint">Prominent pill tag shown at the top corner of this card.</div>';
+        $html .= '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px;">';
+        $html .= '  <div>';
+        $html .= '    <h3 style="margin:0; font-size:18px;"><i class="fas fa-table text-primary"></i> Group Visual Matrix: ' . featuredesk_h($group->name) . '</h3>';
+        $html .= '    <span style="color:#64748b; font-size:13px;">Edit promo badges, hero highlights, and comparison specifications for all plans together. NO CODING NEEDED!</span>';
+        $html .= '  </div>';
+        $html .= '  <div style="display:flex; gap:10px;">';
+        $html .= '    <a href="../cart.php?gid=' . (int)$groupId . '" target="_blank" class="fd-btn fd-btn-default"><i class="fas fa-eye"></i> View Live Store</a>';
+        $html .= '    <a href="' . featuredesk_h($moduleLink) . '&action=products" class="fd-btn fd-btn-default"><i class="fas fa-arrow-left"></i> Back</a>';
         $html .= '  </div>';
         $html .= '</div>';
 
-        // Highlights
-        $html .= '<div class="fd-form-group">';
-        $html .= '  <label class="fd-form-label"><i class="fas fa-check-circle text-success"></i> Hero Highlights (3 to 5 key features &mdash; 1 per line)</label>';
-        $html .= '  <textarea name="card_highlights" class="fd-form-textarea" rows="5" placeholder="1 Website Hosted&#10;5 GB NVMe SSD Storage&#10;500 GB Bandwidth&#10;LiteSpeed + Free SSL">' . featuredesk_h($highlightsText) . '</textarea>';
-        $html .= '  <div class="fd-form-hint"><strong>Declutter effect:</strong> These replace the lengthy 20-line description on the pricing card with clean, modern checkmark bullets.</div>';
+        $html .= '<form method="post" action="' . featuredesk_h($moduleLink) . '&action=save_group_specs" id="fdGroupForm">';
+        $html .= '<input type="hidden" name="group_id" value="' . (int)$groupId . '">';
+
+        $html .= '<div class="fd-matrix-grid-wrap">';
+        $html .= '<table class="fd-matrix-grid" id="fdVisualGrid">';
+
+        // Header Row: Plan Names
+        $html .= '<thead><tr>';
+        $html .= '<th class="fd-grid-spec-col"><i class="fas fa-sliders-h"></i> Specification Feature</th>';
+        foreach ($products as $p) {
+            $html .= '<th>' . featuredesk_h($p->name) . '<br><span style="font-size:11px; opacity:0.8; font-weight:normal;">(PID: ' . (int)$p->id . ')</span></th>';
+        }
+        $html .= '</tr></thead><tbody>';
+
+        // 1. Promo Badge Row
+        $html .= '<tr style="background:#fefce8;">';
+        $html .= '<td style="font-weight:700; color:#854d0e;"><i class="fas fa-ribbon text-warning"></i> Card Promo Badge<br><span style="font-size:11px; font-weight:normal; color:#a16207;">e.g. Starter, Popular, Best Value</span></td>';
+        foreach ($products as $p) {
+            $spec = isset($specsMap[$p->id]) ? $specsMap[$p->id] : null;
+            $bText = $spec ? $spec->badge_text : '';
+            $bColor = ($spec && !empty($spec->badge_color)) ? $spec->badge_color : '#0284c7';
+            $html .= '<td>';
+            $html .= '  <div style="display:flex; gap:6px;">';
+            $html .= '    <input type="text" name="plans[' . (int)$p->id . '][badge]" value="' . featuredesk_h($bText) . '" placeholder="Badge text" class="fd-grid-input" style="flex:1;">';
+            $html .= '    <input type="color" name="plans[' . (int)$p->id . '][badge_color]" value="' . featuredesk_h($bColor) . '" style="width:36px; height:34px; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;">';
+            $html .= '  </div>';
+            $html .= '</td>';
+        }
+        $html .= '</tr>';
+
+        // 2. Hero Highlights Bullets Row
+        $html .= '<tr style="background:#f0fdf4;">';
+        $html .= '<td style="font-weight:700; color:#166534;"><i class="fas fa-check-circle text-success"></i> Hero Highlights (3-5 Bullets)<br><span style="font-size:11px; font-weight:normal; color:#15803d;">One short feature per line (replaces cluttered description on card)</span></td>';
+        foreach ($products as $p) {
+            $spec = isset($specsMap[$p->id]) ? $specsMap[$p->id] : null;
+            $hList = ($spec && $spec->card_highlights) ? json_decode($spec->card_highlights, true) : [];
+            if (!is_array($hList)) $hList = [];
+            $hText = implode("\n", $hList);
+            $html .= '<td>';
+            $html .= '  <textarea name="plans[' . (int)$p->id . '][highlights]" rows="5" class="fd-grid-textarea" placeholder="1 Website Hosted&#10;1 GB NVMe SSD&#10;100 GB Bandwidth&#10;LiteSpeed + Free SSL">' . featuredesk_h($hText) . '</textarea>';
+            $html .= '</td>';
+        }
+        $html .= '</tr>';
+
+        // 3. Categorized Comparison Specs Rows
+        $catIndex = 0;
+        foreach ($matrixCategories as $catName => $featureList) {
+            $catIndex++;
+            $html .= '<tr class="fd-grid-cat-header" data-cat-id="' . $catIndex . '">';
+            $html .= '  <td colspan="' . (count($products) + 1) . '">';
+            $html .= '    <div style="display:flex; justify-content:space-between; align-items:center;">';
+            $html .= '      <div style="display:flex; align-items:center; gap:8px;">';
+            $html .= '        <i class="fas fa-folder-open text-primary"></i>';
+            $html .= '        <input type="text" name="categories[' . $catIndex . '][name]" value="' . featuredesk_h($catName) . '" class="fd-grid-input" style="font-weight:800; font-size:13px; max-width:280px; background:#ffffff;">';
+            $html .= '      </div>';
+            $html .= '      <button type="button" class="fd-btn fd-btn-default fd-btn-sm" onclick="fdAddSpecRow(' . $catIndex . ')"><i class="fas fa-plus"></i> Add Spec Row</button>';
+            $html .= '    </div>';
+            $html .= '  </td>';
+            $html .= '</tr>';
+
+            $rowIndex = 0;
+            foreach ($featureList as $featName) {
+                $rowIndex++;
+                $html .= '<tr class="fd-grid-spec-row" data-cat="' . $catIndex . '">';
+                $html .= '  <td style="display:flex; align-items:center; gap:8px; border-right:1px solid #e2e8f0;">';
+                $html .= '    <button type="button" class="fd-btn-del-row" onclick="this.closest(\'tr\').remove()" title="Delete Feature Row"><i class="fas fa-trash-alt"></i></button>';
+                $html .= '    <input type="text" name="categories[' . $catIndex . '][features][' . $rowIndex . '][name]" value="' . featuredesk_h($featName) . '" class="fd-grid-input" style="flex:1; font-weight:600;">';
+                $html .= '  </td>';
+
+                foreach ($products as $p) {
+                    $val = '';
+                    if (isset($specsMap[$p->id])) {
+                        $details = json_decode($specsMap[$p->id]->detailed_specs, true);
+                        if (is_array($details)) {
+                            foreach ($details as $r) {
+                                if (isset($r['group']) && isset($r['name']) && $r['group'] === $catName && $r['name'] === $featName) {
+                                    $val = $r['value'];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    $html .= '  <td>';
+                    $html .= '    <input type="text" name="categories[' . $catIndex . '][features][' . $rowIndex . '][values][' . (int)$p->id . ']" value="' . featuredesk_h($val) . '" class="fd-grid-input" placeholder="e.g. 10 GB, Unlimited, Yes">';
+                    $html .= '  </td>';
+                }
+                $html .= '</tr>';
+            }
+        }
+
+        $html .= '</tbody></table>';
         $html .= '</div>';
 
-        // Detailed Specs
-        $html .= '<div class="fd-form-group" style="margin-top:25px;">';
-        $html .= '  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">';
-        $html .= '    <label class="fd-form-label" style="margin:0;"><i class="fas fa-table text-primary"></i> Extended Technical Specifications (Comparison Matrix)</label>';
-        $html .= '    <div style="font-size:12px; color:#64748b;">Powers the interactive comparison table below the pricing cards</div>';
-        $html .= '  </div>';
-        $html .= '  <textarea name="detailed_specs" id="fdDetailedSpecsJson" class="fd-form-textarea" rows="14" style="font-family:monospace; font-size:12px;">' . featuredesk_h($detailedSpecs) . '</textarea>';
-        $html .= '  <div class="fd-form-hint">Format: <code>[{"group": "Storage", "name": "NVMe Storage", "value": "20 GB"}, ...]</code></div>';
-        $html .= '</div>';
-
-        $html .= '<div style="margin-top:24px;">';
-        $html .= '  <button type="submit" class="fd-btn fd-btn-primary"><i class="fas fa-save"></i> Save Product Specifications</button>';
+        // Actions
+        $html .= '<div style="margin-top:24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">';
+        $html .= '  <button type="button" class="fd-btn fd-btn-default" onclick="fdAddCategoryBlock()"><i class="fas fa-folder-plus"></i> Add New Category Block</button>';
+        $html .= '  <button type="submit" class="fd-btn fd-btn-success" style="font-size:15px; padding:10px 24px;"><i class="fas fa-save"></i> 💾 Save All Group Specifications</button>';
         $html .= '</div>';
 
         $html .= '</form></div>';
+
+        // Dynamic JS for adding rows & categories
+        $prodCount = count($products);
+        $prodIdsJson = json_encode($productIds);
+
+        $html .= '
+        <script>
+        var fdProdIds = ' . $prodIdsJson . ';
+        var fdCatCounter = ' . ($catIndex + 1) . ';
+        var fdRowCounter = 500;
+
+        function fdAddSpecRow(catId) {
+            fdRowCounter++;
+            var tbody = document.querySelector("#fdVisualGrid tbody");
+            var catHeader = document.querySelector("tr.fd-grid-cat-header[data-cat-id=\'" + catId + "\']");
+            if (!catHeader) return;
+
+            var tr = document.createElement("tr");
+            tr.className = "fd-grid-spec-row";
+            tr.setAttribute("data-cat", catId);
+
+            var tdFirst = document.createElement("td");
+            tdFirst.style.cssText = "display:flex; align-items:center; gap:8px; border-right:1px solid #e2e8f0;";
+            tdFirst.innerHTML = \'<button type="button" class="fd-btn-del-row" onclick="this.closest(\\\'tr\\\').remove()"><i class="fas fa-trash-alt"></i></button>\' +
+                                \'<input type="text" name="categories[\' + catId + \'][features][\' + fdRowCounter + \'][name]" placeholder="New Feature Name" class="fd-grid-input" style="flex:1; font-weight:600;">\';
+            tr.appendChild(tdFirst);
+
+            fdProdIds.forEach(function(pid) {
+                var td = document.createElement("td");
+                td.innerHTML = \'<input type="text" name="categories[\' + catId + \'][features][\' + fdRowCounter + \'][values][\' + pid + \']" placeholder="Value for Plan" class="fd-grid-input">\';
+                tr.appendChild(td);
+            });
+
+            // Insert after the last row in this category or right below header
+            var rows = document.querySelectorAll("tr.fd-grid-spec-row[data-cat=\'" + catId + "\']");
+            if (rows.length > 0) {
+                rows[rows.length - 1].after(tr);
+            } else {
+                catHeader.after(tr);
+            }
+        }
+
+        function fdAddCategoryBlock() {
+            fdCatCounter++;
+            var tbody = document.querySelector("#fdVisualGrid tbody");
+            var trCat = document.createElement("tr");
+            trCat.className = "fd-grid-cat-header";
+            trCat.setAttribute("data-cat-id", fdCatCounter);
+
+            var td = document.createElement("td");
+            td.setAttribute("colspan", ' . ($prodCount + 1) . ');
+            td.innerHTML = \'<div style="display:flex; justify-content:space-between; align-items:center;">\' +
+                           \'  <div style="display:flex; align-items:center; gap:8px;">\' +
+                           \'    <i class="fas fa-folder-open text-primary"></i>\' +
+                           \'    <input type="text" name="categories[\' + fdCatCounter + \'][name]" value="New Category" class="fd-grid-input" style="font-weight:800; font-size:13px; max-width:280px; background:#ffffff;">\' +
+                           \'  </div>\' +
+                           \'  <button type="button" class="fd-btn fd-btn-default fd-btn-sm" onclick="fdAddSpecRow(\' + fdCatCounter + \')"><i class="fas fa-plus"></i> Add Spec Row</button>\' +
+                           \'</div>\';
+            trCat.appendChild(td);
+            tbody.appendChild(trCat);
+            fdAddSpecRow(fdCatCounter);
+        }
+        </script>';
+
         return $html;
     }
 }
@@ -850,7 +971,7 @@ if (!function_exists('featuredesk_render_display_settings_page')) {
         $boxSubtitle   = featuredesk_get_setting('box_subtitle', 'Transparent look at server resources, limits, and developer tooling across our plans.');
 
         $html = '<div class="fd-card">';
-        $html .= '<div class="fd-card-title"><i class="fas fa-sliders-h text-primary"></i> Display Settings & Live Demo</div>';
+        $html .= '<div class="fd-card-title"><i class="fas fa-sliders-h text-primary"></i> Display Settings & Live Behavior</div>';
         $html .= '<div class="fd-card-desc">Control where and how the comparison box renders on your order forms and customize the styling.</div>';
 
         $html .= '<form method="post" action="' . featuredesk_h($moduleLink) . '&action=save_display_settings">';
@@ -899,9 +1020,8 @@ if (!function_exists('featuredesk_render_display_settings_page')) {
         $html .= '<div style="margin-top:20px;">';
         $html .= '  <button type="submit" class="fd-btn fd-btn-primary"><i class="fas fa-save"></i> Save Display Settings</button>';
         $html .= '</div>';
-        $html .= '</form>';
+        $html .= '</form></div>';
 
-        $html .= '</div>';
         return $html;
     }
 }
@@ -916,10 +1036,14 @@ if (!function_exists('featuredesk_render_templates_page')) {
 
         $html = '<div class="fd-card">';
         $html .= '<div class="fd-card-title"><i class="fas fa-layer-group text-primary"></i> Reusable Specification Templates</div>';
-        $html .= '<div class="fd-card-desc">Standardize your technical spec schemas across products.</div>';
+        $html .= '<div class="fd-card-desc">Predefined specification structures for web hosting, VPS, and reseller packages.</div>';
 
         $html .= '<table class="fd-table">';
         $html .= '<thead><tr><th>Template Name</th><th>Category</th><th>Features Included</th></tr></thead><tbody>';
+
+        if ($templates->isEmpty()) {
+            $html .= '<tr><td colspan="3" style="text-align:center; padding:20px; color:#64748b;">No templates found.</td></tr>';
+        }
 
         foreach ($templates as $t) {
             $schema = json_decode($t->spec_schema, true);
@@ -944,7 +1068,7 @@ if (!function_exists('featuredesk_render_integration_guide_page')) {
     {
         $html = '<div class="fd-card">';
         $html .= '<div class="fd-card-title"><i class="fas fa-code text-primary"></i> Integration Guide</div>';
-        $html .= '<p style="color:#475569; font-size:13px; line-height:1.6;">FeatureDesk hooks automatically into WHMCS order form templates (Lagom 2, Standard Cart, Supreme, Premium Comparison) without any template edits required.</p>';
+        $html .= '<p style="color:#475569; font-size:13px; line-height:1.6;">FeatureDesk seamlessly integrates with WHMCS order form templates (Lagom 2, Standard Cart, Supreme, Premium Comparison) without any template edits required.</p>';
         $html .= '</div>';
         return $html;
     }
@@ -965,7 +1089,7 @@ if (!function_exists('featuredesk_render_developer_page')) {
         $html .= '    <li><strong>Developer / Lead:</strong> MD Samsuzzaman Siyam</li>';
         $html .= '    <li><strong>Organization:</strong> Bahari IT (bahari-it.com)</li>';
         $html .= '    <li><strong>Support Portal:</strong> support.baharihost.com</li>';
-        $html .= '    <li><strong>Module Version:</strong> 1.0.1 (Production Stable)</li>';
+        $html .= '    <li><strong>Module Version:</strong> 1.1.0 (Production Stable)</li>';
         $html .= '  </ul>';
         $html .= '</div></div>';
         return $html;
@@ -982,34 +1106,66 @@ if (!function_exists('featuredesk_output')) {
         $moduleLink = $vars['modulelink'];
         $action = isset($_GET['action']) ? trim($_GET['action']) : 'products';
 
-        // Handle POST Actions
-        if ($action === 'save_product_specs' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-            $pid = (int)$_POST['product_id'];
-            $badgeText = trim((string)$_POST['badge_text']);
-            $badgeColor = isset($_POST['badge_color']) ? trim((string)$_POST['badge_color']) : '#2563EB';
-            $highlightsText = trim((string)$_POST['card_highlights']);
-            $detailedSpecs = trim((string)$_POST['detailed_specs']);
+        // 1. Handle Save Group Specs POST (The Visual Spreadsheet Save)
+        if ($action === 'save_group_specs' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $groupId = (int)$_POST['group_id'];
+            $plans = isset($_POST['plans']) ? $_POST['plans'] : [];
+            $categories = isset($_POST['categories']) ? $_POST['categories'] : [];
 
-            $lines = array_filter(array_map('trim', explode("\n", $highlightsText)));
-            $highlightsJson = json_encode(array_values($lines));
+            // Compile specs per product ID
+            $productSpecsMap = [];
+            foreach ($categories as $cIndex => $catData) {
+                $catName = !empty($catData['name']) ? trim($catData['name']) : 'General';
+                if (isset($catData['features']) && is_array($catData['features'])) {
+                    foreach ($catData['features'] as $fIndex => $featData) {
+                        $featName = !empty($featData['name']) ? trim($featData['name']) : '';
+                        if ($featName === '') continue;
+
+                        if (isset($featData['values']) && is_array($featData['values'])) {
+                            foreach ($featData['values'] as $pId => $val) {
+                                $productSpecsMap[(int)$pId][] = [
+                                    'group' => $catName,
+                                    'name'  => $featName,
+                                    'value' => trim((string)$val)
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
 
             $now = date('Y-m-d H:i:s');
-            Capsule::table('mod_featuredesk_specs')->updateOrInsert(
-                ['product_id' => $pid],
-                [
-                    'badge_text'      => $badgeText,
-                    'badge_color'     => $badgeColor,
-                    'card_highlights' => $highlightsJson,
-                    'detailed_specs'  => $detailedSpecs,
-                    'enabled'         => 1,
-                    'updated_at'      => $now,
-                ]
-            );
 
-            header('Location: ' . $moduleLink . '&action=edit_product&pid=' . $pid . '&saved=1');
+            // Save each plan
+            foreach ($plans as $pId => $planData) {
+                $pId = (int)$pId;
+                $badgeText = !empty($planData['badge']) ? trim($planData['badge']) : '';
+                $badgeColor = !empty($planData['badge_color']) ? trim($planData['badge_color']) : '#0284c7';
+
+                $rawHighlights = !empty($planData['highlights']) ? trim($planData['highlights']) : '';
+                $hLines = array_filter(array_map('trim', explode("\n", $rawHighlights)));
+                $highlightsJson = json_encode(array_values($hLines));
+
+                $detailedJson = json_encode(isset($productSpecsMap[$pId]) ? $productSpecsMap[$pId] : []);
+
+                Capsule::table('mod_featuredesk_specs')->updateOrInsert(
+                    ['product_id' => $pId],
+                    [
+                        'badge_text'      => $badgeText,
+                        'badge_color'     => $badgeColor,
+                        'card_highlights' => $highlightsJson,
+                        'detailed_specs'  => $detailedJson,
+                        'enabled'         => 1,
+                        'updated_at'      => $now,
+                    ]
+                );
+            }
+
+            header('Location: ' . $moduleLink . '&action=edit_group&gid=' . $groupId . '&saved=1');
             exit;
         }
 
+        // 2. Handle Save Display Settings POST
         if ($action === 'save_display_settings' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             featuredesk_save_setting('display_mode', trim($_POST['display_mode']));
             featuredesk_save_setting('clean_pricing_cards', isset($_POST['clean_pricing_cards']) ? '1' : '0');
@@ -1022,18 +1178,18 @@ if (!function_exists('featuredesk_output')) {
             exit;
         }
 
-        // Render View
+        // Render Views
         echo featuredesk_render_header($moduleLink, $action);
 
         switch ($action) {
-            case 'edit_product':
-                echo featuredesk_render_edit_product_page($moduleLink, (int)$_GET['pid']);
-                break;
-            case 'templates':
-                echo featuredesk_render_templates_page($moduleLink);
+            case 'edit_group':
+                echo featuredesk_render_edit_group_page($moduleLink, (int)$_GET['gid']);
                 break;
             case 'display_settings':
                 echo featuredesk_render_display_settings_page($moduleLink);
+                break;
+            case 'templates':
+                echo featuredesk_render_templates_page($moduleLink);
                 break;
             case 'integration_guide':
                 echo featuredesk_render_integration_guide_page();

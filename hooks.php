@@ -3,17 +3,14 @@
  * WHMCS Addon Module: FeatureDesk - Smart Spec Box & Plan Matrix
  * Hooks File
  *
- * Handles:
- * 1. Admin Product Config Tab Injection (Fields for Highlights & Detailed Specs)
- * 2. Admin Product Config Save Handler
- * 3. ClientAreaPageCart / ClientAreaPage: Clean Cards & Matrix Data Generation
- * 4. ClientAreaHeadOutput: Responsive CSS injection
- * 5. ClientAreaFooterOutput: Automatic DOM Placement below Pricing Cards
+ * Automatically renders:
+ * 1. Promotional Badges on Pricing Cards (Lagom 2 & Standard Cart)
+ * 2. Clean Hero Bullet Badges replacing cluttered descriptions
+ * 3. Responsive Technical Specifications Comparison Matrix Box below cards
  *
  * @package    FeatureDesk
  * @author     MD Samsuzzaman Siyam <samsusiyam@gmail.com>
  * @copyright  Bahari Host
- * @license    Proprietary
  */
 
 use WHMCS\Database\Capsule;
@@ -31,9 +28,7 @@ if (!function_exists('featuredesk_get_setting')) {
                     return $row->setting_value;
                 }
             }
-        } catch (\Exception $e) {
-            // fallback
-        }
+        } catch (\Exception $e) {}
         return $default;
     }
 }
@@ -45,335 +40,31 @@ if (!function_exists('featuredesk_h')) {
 }
 
 /**
- * Hook 1: Inject Custom Product Fields in WHMCS Admin Product Edit Page
- */
-add_hook('AdminProductConfigFields', 1, function ($vars) {
-    $pid = isset($vars['pid']) ? (int)$vars['pid'] : 0;
-    if (!$pid) {
-        return [];
-    }
-
-    try {
-        $spec = Capsule::table('mod_featuredesk_specs')->where('product_id', $pid)->first();
-    } catch (\Exception $e) {
-        $spec = null;
-    }
-
-    $badge = $spec ? $spec->badge_text : '';
-    $color = ($spec && !empty($spec->badge_color)) ? $spec->badge_color : '#2563EB';
-    $highlights = ($spec && $spec->card_highlights) ? json_decode($spec->card_highlights, true) : [];
-    if (!is_array($highlights)) {
-        $highlights = [];
-    }
-    $highlightsText = implode("\n", $highlights);
-
-    $specsData = ($spec && $spec->detailed_specs) ? $spec->detailed_specs : '[]';
-
-    $html = '
-    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:20px; margin:15px 0;">
-        <div style="display:flex; align-items:center; margin-bottom:15px;">
-            <div style="background:#2563EB; color:#fff; width:34px; height:34px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:16px; margin-right:12px;">
-                <i class="fas fa-layer-group"></i>
-            </div>
-            <div>
-                <h4 style="margin:0; font-size:16px; font-weight:700; color:#0f172a;">FeatureDesk — Smart Spec Box & Matrix</h4>
-                <p style="margin:2px 0 0; font-size:12px; color:#64748b;">Manage short hero highlights for the pricing card and granular specs for the comparison matrix.</p>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-6" style="margin-bottom:15px;">
-                <label style="font-weight:600; font-size:13px; color:#334155;">Card Highlight Badge</label>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" name="featuredesk_badge" value="' . featuredesk_h($badge) . '" class="form-control" placeholder="e.g. Most Popular, Best Value, Starter" style="flex:1;">
-                    <input type="color" name="featuredesk_badge_color" value="' . featuredesk_h($color) . '" class="form-control" style="width:50px; padding:2px; height:34px;">
-                </div>
-                <small style="color:#64748b; font-size:11px;">Small tag displayed at the top corner of the pricing card.</small>
-            </div>
-
-            <div class="col-md-6" style="margin-bottom:15px;">
-                <label style="font-weight:600; font-size:13px; color:#334155;">Hero Highlights (1 item per line, max 5-6 recommended)</label>
-                <textarea name="featuredesk_highlights" rows="5" class="form-control" placeholder="1 Website Hosted&#10;10 GB NVMe Storage&#10;Unlimited Bandwidth&#10;Free SSL & Daily Backup">' . featuredesk_h($highlightsText) . '</textarea>
-                <small style="color:#64748b; font-size:11px;">These replace the lengthy description on the pricing card with clean, modern checkmark bullets.</small>
-            </div>
-        </div>
-
-        <div style="margin-top:10px;">
-            <label style="font-weight:600; font-size:13px; color:#334155;">Detailed Technical Specifications (JSON Matrix Data)</label>
-            <textarea name="featuredesk_specs" rows="8" class="form-control" style="font-family:monospace; font-size:12px;">' . featuredesk_h($specsData) . '</textarea>
-            <small style="color:#64748b; font-size:11px;">Format: [{"group": "Hardware", "name": "CPU", "value": "1 vCPU"}, ...]</small>
-        </div>
-    </div>';
-
-    return [
-        'FeatureDesk Specifications' => $html,
-    ];
-});
-
-/**
- * Hook 2: Save Custom Product Fields from WHMCS Admin
- */
-add_hook('AdminProductConfigFieldsSave', 1, function ($vars) {
-    $pid = isset($vars['pid']) ? (int)$vars['pid'] : 0;
-    if (!$pid) {
-        return;
-    }
-
-    $badge = isset($_POST['featuredesk_badge']) ? trim($_POST['featuredesk_badge']) : '';
-    $badgeColor = isset($_POST['featuredesk_badge_color']) ? trim($_POST['featuredesk_badge_color']) : '#2563EB';
-    $rawHighlights = isset($_POST['featuredesk_highlights']) ? trim($_POST['featuredesk_highlights']) : '';
-    $rawSpecs = isset($_POST['featuredesk_specs']) ? trim($_POST['featuredesk_specs']) : '';
-
-    $highlights = [];
-    if (!empty($rawHighlights)) {
-        $lines = explode("\n", $rawHighlights);
-        foreach ($lines as $line) {
-            $cleaned = trim($line);
-            if ($cleaned !== '') {
-                $highlights[] = $cleaned;
-            }
-        }
-    }
-
-    if (!empty($rawSpecs)) {
-        $testJson = json_decode($rawSpecs, true);
-        if ($testJson === null && json_last_error() !== JSON_ERROR_NONE) {
-            $rawSpecs = '[]';
-        }
-    } else {
-        $rawSpecs = '[]';
-    }
-
-    $now = date('Y-m-d H:i:s');
-    try {
-        Capsule::table('mod_featuredesk_specs')->updateOrInsert(
-            ['product_id' => $pid],
-            [
-                'badge_text'       => $badge,
-                'badge_color'      => $badgeColor,
-                'card_highlights'  => json_encode($highlights),
-                'detailed_specs'   => $rawSpecs,
-                'enabled'          => 1,
-                'updated_at'       => $now,
-            ]
-        );
-    } catch (\Exception $e) {
-        logActivity('FeatureDesk Save Error: ' . $e->getMessage());
-    }
-});
-
-/**
- * Helper to build Matrix Data & Clean Cards
- */
-if (!function_exists('featuredesk_process_cart_matrix')) {
-    function featuredesk_process_cart_matrix(&$products) {
-        if (!is_array($products) || empty($products)) {
-            return '';
-        }
-
-        $cleanCards = (featuredesk_get_setting('clean_pricing_cards', '1') === '1');
-        $showScrollBtn = (featuredesk_get_setting('show_scroll_btn', '1') === '1');
-        $boxTitle = featuredesk_get_setting('box_title', 'Technical Specifications & Limit Comparison');
-        $boxSubtitle = featuredesk_get_setting('box_subtitle', 'Transparent look at server resources, limits, and developer tooling across our plans.');
-        $theme = featuredesk_get_setting('theme', 'modern_blue');
-
-        $productIds = [];
-        foreach ($products as $p) {
-            $pId = isset($p['pid']) ? (int)$p['pid'] : (isset($p['id']) ? (int)$p['id'] : 0);
-            if ($pId) {
-                $productIds[] = $pId;
-            }
-        }
-
-        if (empty($productIds)) {
-            return '';
-        }
-
-        try {
-            $specs = Capsule::table('mod_featuredesk_specs')
-                ->whereIn('product_id', $productIds)
-                ->where('enabled', 1)
-                ->get()
-                ->keyBy('product_id');
-        } catch (\Exception $e) {
-            return '';
-        }
-
-        if ($specs->isEmpty()) {
-            return '';
-        }
-
-        $matrixColumns = [];
-        $allCategories = [];
-
-        foreach ($products as &$prod) {
-            $pid = isset($prod['pid']) ? (int)$prod['pid'] : (isset($prod['id']) ? (int)$prod['id'] : 0);
-            if (isset($specs[$pid])) {
-                $item = $specs[$pid];
-                $highlights = json_decode($item->card_highlights, true);
-                if (is_array($highlights) && count($highlights) > 0) {
-                    $prod['featuredesk_highlights'] = $highlights;
-                    $prod['featuredesk_badge'] = $item->badge_text;
-
-                    if ($cleanCards) {
-                        $bulletHtml = '<ul class="fd-card-bullets">';
-                        foreach ($highlights as $h) {
-                            $bulletHtml .= '<li><i class="fas fa-check-circle fd-icon-check"></i> ' . featuredesk_h($h) . '</li>';
-                        }
-                        $bulletHtml .= '</ul>';
-
-                        if ($showScrollBtn) {
-                            $bulletHtml .= '<div class="fd-scroll-wrap"><a href="#featuredesk-matrix-box" class="fd-scroll-link">View Full Tech Specs &darr;</a></div>';
-                        }
-                        $prod['description'] = $bulletHtml;
-                    }
-                }
-
-                $details = json_decode($item->detailed_specs, true);
-                $normalizedDetails = [];
-
-                if (is_array($details)) {
-                    if (isset($details[0]) && is_array($details[0]) && isset($details[0]['group'])) {
-                        foreach ($details as $row) {
-                            $grp = !empty($row['group']) ? $row['group'] : 'General';
-                            $feat = !empty($row['name']) ? $row['name'] : 'Feature';
-                            $val = isset($row['value']) ? $row['value'] : '';
-                            $normalizedDetails[$grp][$feat] = $val;
-                        }
-                    } else {
-                        $normalizedDetails = $details;
-                    }
-
-                    $priceStr = '';
-                    if (isset($prod['pricing']['minprice']['price'])) {
-                        $priceStr = $prod['pricing']['minprice']['price'];
-                        if (isset($prod['pricing']['minprice']['cycle'])) {
-                            $priceStr .= ' <small>/ ' . $prod['pricing']['minprice']['cycle'] . '</small>';
-                        }
-                    } elseif (isset($prod['pricing']['rawpricing']['monthly'])) {
-                        $priceStr = $prod['pricing']['rawpricing']['monthly'];
-                    }
-
-                    $matrixColumns[$pid] = [
-                        'name'    => $prod['name'],
-                        'price'   => $priceStr,
-                        'order'   => isset($prod['orderurl']) ? $prod['orderurl'] : (isset($prod['productUrl']) ? $prod['productUrl'] : ''),
-                        'details' => $normalizedDetails,
-                    ];
-
-                    foreach ($normalizedDetails as $categoryName => $catFeatures) {
-                        if (!isset($allCategories[$categoryName])) {
-                            $allCategories[$categoryName] = [];
-                        }
-                        if (is_array($catFeatures)) {
-                            foreach ($catFeatures as $featKey => $featVal) {
-                                if (!in_array($featKey, $allCategories[$categoryName])) {
-                                    $allCategories[$categoryName][] = $featKey;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        unset($prod);
-
-        if (count($matrixColumns) === 0) {
-            return '';
-        }
-
-        $matrixHtml = '<div id="featuredesk-matrix-box" class="fd-specbox fd-theme-' . featuredesk_h($theme) . '">';
-        $matrixHtml .= '  <div class="fd-specbox-header">';
-        $matrixHtml .= '    <h3 class="fd-specbox-title"><i class="fas fa-microchip" style="margin-right:8px;"></i>' . featuredesk_h($boxTitle) . '</h3>';
-        $matrixHtml .= '    <p class="fd-specbox-subtitle">' . featuredesk_h($boxSubtitle) . '</p>';
-        $matrixHtml .= '  </div>';
-
-        $matrixHtml .= '  <div class="fd-table-responsive">';
-        $matrixHtml .= '    <table class="fd-spec-table">';
-        $matrixHtml .= '      <thead><tr>';
-        $matrixHtml .= '        <th class="fd-col-feature">Specification & Limit</th>';
-        foreach ($matrixColumns as $col) {
-            $matrixHtml .= '    <th class="fd-col-plan">';
-            $matrixHtml .= '      <div class="fd-plan-name">' . featuredesk_h($col['name']) . '</div>';
-            if (!empty($col['price'])) {
-                $matrixHtml .= '  <div class="fd-plan-price">' . $col['price'] . '</div>';
-            }
-            if (!empty($col['order'])) {
-                $matrixHtml .= '  <a href="' . featuredesk_h($col['order']) . '" class="btn btn-primary btn-sm fd-btn-choose">Order Plan</a>';
-            }
-            $matrixHtml .= '    </th>';
-        }
-        $matrixHtml .= '      </tr></thead><tbody>';
-
-        foreach ($allCategories as $categoryName => $featureKeys) {
-            $matrixHtml .= '    <tr class="fd-category-row"><td colspan="' . (count($matrixColumns) + 1) . '"><i class="fas fa-folder-open" style="margin-right:6px;"></i> ' . featuredesk_h($categoryName) . '</td></tr>';
-            foreach ($featureKeys as $featureKey) {
-                $matrixHtml .= '  <tr class="fd-feature-row">';
-                $matrixHtml .= '    <td class="fd-feature-label">' . featuredesk_h($featureKey) . '</td>';
-                foreach ($matrixColumns as $col) {
-                    $val = isset($col['details'][$categoryName][$featureKey]) ? $col['details'][$categoryName][$featureKey] : '&mdash;';
-                    if (strtolower(trim($val)) === 'yes' || strtolower(trim($val)) === 'true' || strtolower(trim($val)) === 'enabled') {
-                        $cellContent = '<span class="fd-val-yes"><i class="fas fa-check-circle"></i> Yes</span>';
-                    } elseif (strtolower(trim($val)) === 'no' || strtolower(trim($val)) === 'false' || strtolower(trim($val)) === 'disabled') {
-                        $cellContent = '<span class="fd-val-no"><i class="fas fa-times-circle"></i> No</span>';
-                    } else {
-                        $cellContent = '<span class="fd-val-text">' . featuredesk_h($val) . '</span>';
-                    }
-                    $matrixHtml .= '  <td class="fd-feature-value">' . $cellContent . '</td>';
-                }
-                $matrixHtml .= '  </tr>';
-            }
-        }
-
-        $matrixHtml .= '      </tbody></table>';
-        $matrixHtml .= '  </div>';
-        $matrixHtml .= '</div>';
-
-        return $matrixHtml;
-    }
-}
-
-/**
- * Hook 3: Process Cart Products in ClientAreaPageCart & ClientAreaPage
- */
-add_hook('ClientAreaPageCart', 1, function ($vars) {
-    if (isset($vars['products']) && is_array($vars['products'])) {
-        $matrixHtml = featuredesk_process_cart_matrix($vars['products']);
-        if (!empty($matrixHtml)) {
-            $GLOBALS['featuredesk_matrix_html'] = $matrixHtml;
-            return [
-                'products'           => $vars['products'],
-                'featuredesk_matrix' => $matrixHtml,
-            ];
-        }
-    }
-    return [];
-});
-
-add_hook('ClientAreaPage', 1, function ($vars) {
-    if (isset($vars['products']) && is_array($vars['products']) && empty($GLOBALS['featuredesk_matrix_html'])) {
-        $matrixHtml = featuredesk_process_cart_matrix($vars['products']);
-        if (!empty($matrixHtml)) {
-            $GLOBALS['featuredesk_matrix_html'] = $matrixHtml;
-            return [
-                'products'           => $vars['products'],
-                'featuredesk_matrix' => $matrixHtml,
-            ];
-        }
-    }
-    return [];
-});
-
-/**
- * Hook 4: Inject Head CSS Styles
+ * Head CSS Injection
  */
 add_hook('ClientAreaHeadOutput', 1, function ($vars) {
     return '
     <style id="featuredesk-styles">
+        .fd-card-badge {
+            position: absolute !important;
+            top: -12px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            color: #ffffff !important;
+            font-size: 11px !important;
+            font-weight: 800 !important;
+            padding: 3px 14px !important;
+            border-radius: 12px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            z-index: 15 !important;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+            white-space: nowrap !important;
+        }
         .fd-card-bullets {
             list-style: none !important;
             padding: 0 !important;
-            margin: 15px 0 !important;
+            margin: 15px 0 10px 0 !important;
             text-align: left !important;
         }
         .fd-card-bullets li {
@@ -399,14 +90,14 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
             margin: 15px 0 5px;
         }
         .fd-scroll-link {
-            font-size: 12px;
-            font-weight: 600;
-            color: #2563EB;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #0284c7;
             text-decoration: underline;
             transition: color 0.2s;
         }
         .fd-scroll-link:hover {
-            color: #1d4ed8;
+            color: #0369a1;
         }
         .fd-specbox {
             margin: 40px auto 30px;
@@ -475,7 +166,7 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
         .fd-plan-price {
             font-size: 14px;
             font-weight: 600;
-            color: #2563EB;
+            color: #0284c7;
             margin-bottom: 8px;
         }
         .fd-btn-choose {
@@ -523,62 +214,225 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
             color: #1e293b;
         }
         .fd-theme-modern_blue {
-            border-top: 4px solid #2563EB;
+            border-top: 4px solid #0284c7;
         }
         .fd-theme-modern_blue .fd-specbox-title {
-            color: #1d4ed8;
+            color: #0369a1;
         }
     </style>';
 });
 
 /**
- * Hook 5: Automatically Append Spec Box to Cart Page Footer if auto_below_cards is enabled
+ * Client Footer Output:
+ * Renders badges & clean highlights directly on cards AND bottom comparison matrix!
  */
 add_hook('ClientAreaFooterOutput', 1, function ($vars) {
-    $displayMode = featuredesk_get_setting('display_mode', 'auto_below_cards');
-    if ($displayMode !== 'auto_below_cards') {
+    try {
+        if (!Capsule::schema()->hasTable('mod_featuredesk_specs')) {
+            return '';
+        }
+
+        $allSpecs = Capsule::table('mod_featuredesk_specs')
+            ->join('tblproducts', 'mod_featuredesk_specs.product_id', '=', 'tblproducts.id')
+            ->select(
+                'tblproducts.id as pid',
+                'tblproducts.gid',
+                'tblproducts.name as pname',
+                'mod_featuredesk_specs.badge_text',
+                'mod_featuredesk_specs.badge_color',
+                'mod_featuredesk_specs.card_highlights',
+                'mod_featuredesk_specs.detailed_specs'
+            )
+            ->where('mod_featuredesk_specs.enabled', 1)
+            ->get();
+    } catch (\Exception $e) {
         return '';
     }
 
-    if (empty($GLOBALS['featuredesk_matrix_html'])) {
+    if ($allSpecs->isEmpty()) {
         return '';
     }
 
-    $rawMatrixHtml = $GLOBALS['featuredesk_matrix_html'];
-    $jsonHtml = json_encode($rawMatrixHtml);
+    $productMap = [];
+    foreach ($allSpecs as $s) {
+        $hList = json_decode($s->card_highlights, true);
+        if (!is_array($hList)) $hList = [];
+
+        $dList = json_decode($s->detailed_specs, true);
+        if (!is_array($dList)) $dList = [];
+
+        // Normalize specs
+        $normDetails = [];
+        if (isset($dList[0]) && is_array($dList[0]) && isset($dList[0]['group'])) {
+            foreach ($dList as $row) {
+                $grp = !empty($row['group']) ? $row['group'] : 'General';
+                $feat = !empty($row['name']) ? $row['name'] : 'Feature';
+                $val = isset($row['value']) ? $row['value'] : '';
+                $normDetails[$grp][$feat] = $val;
+            }
+        } else {
+            $normDetails = $dList;
+        }
+
+        $productMap[$s->pid] = [
+            'pid'        => (int)$s->pid,
+            'gid'        => (int)$s->gid,
+            'name'       => $s->pname,
+            'badge'      => (string)$s->badge_text,
+            'color'      => !empty($s->badge_color) ? $s->badge_color : '#0284c7',
+            'highlights' => $hList,
+            'specs'      => $normDetails,
+        ];
+    }
+
+    $cleanCards = (featuredesk_get_setting('clean_pricing_cards', '1') === '1');
+    $showScroll = (featuredesk_get_setting('show_scroll_btn', '1') === '1');
+    $boxTitle = featuredesk_get_setting('box_title', 'Technical Specifications & Limit Comparison');
+    $boxSubtitle = featuredesk_get_setting('box_subtitle', 'Transparent look at server resources, limits, and developer tooling across our plans.');
+    $theme = featuredesk_get_setting('theme', 'modern_blue');
+
+    $payload = json_encode([
+        'products'    => $productMap,
+        'clean_cards' => $cleanCards,
+        'show_scroll' => $showScroll,
+        'title'       => $boxTitle,
+        'subtitle'    => $boxSubtitle,
+        'theme'       => $theme,
+    ]);
 
     return '
-    <script id="featuredesk-injector">
+    <script id="featuredesk-runtime">
     (function() {
-        function injectFeatureDesk() {
-            if (document.getElementById("featuredesk-matrix-box")) return;
+        var FD_DATA = ' . $payload . ';
 
-            var html = ' . $jsonHtml . ';
-            var wrapper = document.createElement("div");
-            wrapper.innerHTML = html;
-            var node = wrapper.firstElementChild;
+        function initFeatureDesk() {
+            var cards = document.querySelectorAll(".package, .product-card, .price-table");
+            if (!cards.length) return;
 
-            // Lagom 2 and WHMCS container targets
-            var target = document.querySelector(".section.products") ||
-                         document.querySelector(".row.row-eq-height") ||
-                         document.querySelector(".packages-list") ||
-                         document.querySelector(".products-row") ||
-                         (document.querySelector(".package") ? document.querySelector(".package").closest(".row") : null) ||
-                         document.querySelector(".main-content");
+            var matchedPlans = [];
 
-            if (target) {
-                target.parentNode.insertBefore(node, target.nextSibling);
-            } else {
-                var body = document.querySelector(".app-main") || document.body;
-                body.appendChild(node);
+            cards.forEach(function(card) {
+                var titleEl = card.querySelector(".package-title, .product-title, h3, h4");
+                if (!titleEl) return;
+
+                var titleText = titleEl.innerText.trim().toLowerCase();
+                var matched = null;
+
+                for (var pid in FD_DATA.products) {
+                    var p = FD_DATA.products[pid];
+                    if (titleText.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(titleText)) {
+                        matched = p;
+                        break;
+                    }
+                }
+
+                if (!matched) return;
+                matchedPlans.push(matched);
+
+                // 1. Promotional Badge injection
+                if (matched.badge && !card.querySelector(".fd-card-badge")) {
+                    card.style.position = "relative";
+                    var b = document.createElement("div");
+                    b.className = "fd-card-badge";
+                    b.innerText = matched.badge;
+                    b.style.backgroundColor = matched.color;
+                    card.appendChild(b);
+                }
+
+                // 2. Clean Highlights injection
+                if (FD_DATA.clean_cards && matched.highlights && matched.highlights.length > 0) {
+                    var contentEl = card.querySelector(".package-content, .product-desc, .package-body");
+                    if (contentEl && !card.querySelector(".fd-card-bullets")) {
+                        var html = "<ul class=\"fd-card-bullets\">";
+                        matched.highlights.forEach(function(item) {
+                            html += "<li><i class=\"fas fa-check-circle fd-icon-check\"></i> " + item + "</li>";
+                        });
+                        html += "</ul>";
+
+                        if (FD_DATA.show_scroll) {
+                            html += "<div class=\"fd-scroll-wrap\"><a href=\"#featuredesk-matrix-box\" class=\"fd-scroll-link\">View Full Tech Specs &darr;</a></div>";
+                        }
+                        contentEl.innerHTML = html;
+                    }
+                }
+            });
+
+            // 3. Bottom Matrix Box Rendering
+            if (matchedPlans.length > 0 && !document.getElementById("featuredesk-matrix-box")) {
+                var allCats = {};
+                matchedPlans.forEach(function(p) {
+                    for (var cat in p.specs) {
+                        if (!allCats[cat]) allCats[cat] = [];
+                        for (var feat in p.specs[cat]) {
+                            if (allCats[cat].indexOf(feat) === -1) {
+                                allCats[cat].push(feat);
+                            }
+                        }
+                    }
+                });
+
+                var mHtml = "<div id=\"featuredesk-matrix-box\" class=\"fd-specbox fd-theme-" + FD_DATA.theme + "\">";
+                mHtml += "<div class=\"fd-specbox-header\">";
+                mHtml += "<h3 class=\"fd-specbox-title\"><i class=\"fas fa-microchip\" style=\"margin-right:8px;\"></i>" + FD_DATA.title + "</h3>";
+                mHtml += "<p class=\"fd-specbox-subtitle\">" + FD_DATA.subtitle + "</p>";
+                mHtml += "</div>";
+
+                mHtml += "<div class=\"fd-table-responsive\"><table class=\"fd-spec-table\">";
+                mHtml += "<thead><tr><th class=\"fd-col-feature\">Specification & Limit</th>";
+                matchedPlans.forEach(function(p) {
+                    mHtml += "<th class=\"fd-col-plan\"><div class=\"fd-plan-name\">" + p.name + "</div></th>";
+                });
+                mHtml += "</tr></thead><tbody>";
+
+                for (var cat in allCats) {
+                    mHtml += "<tr class=\"fd-category-row\"><td colspan=\"" + (matchedPlans.length + 1) + "\"><i class=\"fas fa-folder-open\" style=\"margin-right:6px;\"></i> " + cat + "</td></tr>";
+                    allCats[cat].forEach(function(feat) {
+                        mHtml += "<tr class=\"fd-feature-row\">";
+                        mHtml += "<td class=\"fd-feature-label\">" + feat + "</td>";
+                        matchedPlans.forEach(function(p) {
+                            var val = (p.specs[cat] && p.specs[cat][feat]) ? p.specs[cat][feat] : "—";
+                            var valLow = val.toLowerCase().trim();
+                            var cell = "<span class=\"fd-val-text\">" + val + "</span>";
+                            if (valLow === "yes" || valLow === "true" || valLow === "enabled") {
+                                cell = "<span class=\"fd-val-yes\"><i class=\"fas fa-check-circle\"></i> Yes</span>";
+                            } else if (valLow === "no" || valLow === "false" || valLow === "disabled") {
+                                cell = "<span class=\"fd-val-no\"><i class=\"fas fa-times-circle\"></i> No</span>";
+                            }
+                            mHtml += "<td class=\"fd-feature-value\">" + cell + "</td>";
+                        });
+                        mHtml += "</tr>";
+                    });
+                }
+
+                mHtml += "</tbody></table></div></div>";
+
+                var wrapper = document.createElement("div");
+                wrapper.innerHTML = mHtml;
+                var boxNode = wrapper.firstElementChild;
+
+                var target = document.querySelector(".section.products") ||
+                             document.querySelector(".row.row-eq-height") ||
+                             document.querySelector(".packages-list") ||
+                             document.querySelector(".products-row") ||
+                             (document.querySelector(".package") ? document.querySelector(".package").closest(".row") : null) ||
+                             document.querySelector(".main-content");
+
+                if (target) {
+                    target.parentNode.insertBefore(boxNode, target.nextSibling);
+                } else {
+                    document.body.appendChild(boxNode);
+                }
             }
         }
 
         if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", injectFeatureDesk);
+            document.addEventListener("DOMContentLoaded", initFeatureDesk);
         } else {
-            injectFeatureDesk();
+            initFeatureDesk();
         }
+        // Also run shortly after to catch dynamic ajax re-renders
+        setTimeout(initFeatureDesk, 500);
+        setTimeout(initFeatureDesk, 1500);
     })();
     </script>';
 });
