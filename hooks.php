@@ -1,9 +1,13 @@
 <?php
 /**
- * FeatureDesk - Smart Spec Box & Plan Matrix
- * Client Area Hooks: DOM Injection, Spec Comparison Box, Dynamic Styles
+ * WHMCS Addon Module: FeatureDesk - Client Area Hooks
  *
- * @version 1.3.0
+ * Injects Category-based Feature Spec Boxes, Server Backup Notices,
+ * and Dynamic HTML Blocks directly below product cards in WHMCS order forms.
+ *
+ * STRICT RULE: Leaves native pricing cards and product descriptions 100% UNTOUCHED.
+ *
+ * @version 2.0.0
  * @author Samsuzzaman Siyam
  * @website https://baharihost.com
  */
@@ -43,492 +47,356 @@ if (!function_exists('featuredesk_h')) {
 }
 
 /**
- * Head CSS Injection with Dynamic Color Customization
+ * Head CSS Injection: Scoped styles & responsive layouts
  */
 add_hook('ClientAreaHeadOutput', 1, function ($vars) {
-    // Dynamic Custom Colors from Display Settings
-    $colorPrimary      = featuredesk_get_setting('color_primary', '#0284c7');
-    $colorBulletIcon   = featuredesk_get_setting('color_bullet_icon', '#10B981');
-    $colorBulletText   = featuredesk_get_setting('color_bullet_text', '#334155');
-    $colorHeaderBg     = featuredesk_get_setting('color_header_bg', '#fafafa');
-    $colorHeaderTitle  = featuredesk_get_setting('color_header_title', '#0f172a');
-    $colorCategoryBg   = featuredesk_get_setting('color_category_bg', '#f8fafc');
-    $colorCategoryText = featuredesk_get_setting('color_category_text', '#475569');
-    $colorRowHover     = featuredesk_get_setting('color_row_hover', '#f8fafc');
-    $colorBorder       = featuredesk_get_setting('color_border', '#e2e8f0');
+    $maxWidth  = featuredesk_get_setting('container_max_width', '1200px');
+    $primary   = featuredesk_get_setting('color_primary', '#0284c7');
+    $globalCss = featuredesk_get_setting('global_custom_css', '');
 
-    return '
+    $css = '
     <style id="featuredesk-styles">
         :root {
-            --fd-primary: ' . featuredesk_h($colorPrimary) . ';
-            --fd-bullet-icon: ' . featuredesk_h($colorBulletIcon) . ';
-            --fd-bullet-text: ' . featuredesk_h($colorBulletText) . ';
-            --fd-header-bg: ' . featuredesk_h($colorHeaderBg) . ';
-            --fd-header-title: ' . featuredesk_h($colorHeaderTitle) . ';
-            --fd-category-bg: ' . featuredesk_h($colorCategoryBg) . ';
-            --fd-category-text: ' . featuredesk_h($colorCategoryText) . ';
-            --fd-row-hover: ' . featuredesk_h($colorRowHover) . ';
-            --fd-border: ' . featuredesk_h($colorBorder) . ';
+            --fd-max-w: ' . featuredesk_h($maxWidth) . ';
+            --fd-primary: ' . featuredesk_h($primary) . ';
+            --fd-green: #10b981;
+            --fd-border: #e2e8f0;
+            --fd-bg-card: #ffffff;
+            --fd-text-main: #1e293b;
+            --fd-text-muted: #64748b;
         }
-        .fd-card-bullets {
-            list-style: none !important;
-            padding: 0 !important;
-            margin: 14px 0 10px 0 !important;
-            text-align: left !important;
+
+        /* Container under product cards */
+        .fd-category-wrapper {
+            max-width: var(--fd-max-w);
+            margin: 40px auto 30px auto;
+            padding: 0 15px;
+            box-sizing: border-box;
+            clear: both;
+            font-family: inherit;
         }
-        .fd-card-bullets li {
-            padding: 6px 0 !important;
-            font-size: 13.5px !important;
-            color: var(--fd-bullet-text) !important;
-            display: flex !important;
-            align-items: center !important;
-            border-bottom: 1px dashed #f1f5f9 !important;
-            line-height: 1.4 !important;
+
+        /* Base Card Styling */
+        .fd-card {
+            background: var(--fd-bg-card);
+            border: 1px solid var(--fd-border);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+            padding: 28px 32px;
+            margin-bottom: 24px;
+            box-sizing: border-box;
+            transition: all 0.2s ease-in-out;
         }
-        .fd-card-bullets li:last-child {
-            border-bottom: none !important;
+        .fd-card:hover {
+            box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08);
         }
-        .fd-icon-check {
-            color: var(--fd-bullet-icon) !important;
-            margin-right: 10px !important;
-            font-size: 14px !important;
-            flex-shrink: 0 !important;
+
+        /* Section Header */
+        .fd-card-header {
+            margin-bottom: 22px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        .fd-custom-html-highlights {
-            text-align: left !important;
-            margin: 14px 0 10px 0 !important;
-            font-size: 13.5px !important;
-            color: var(--fd-bullet-text) !important;
-        }
-        .fd-scroll-wrap {
-            text-align: center;
-            margin: 14px 0 10px;
-        }
-        .fd-scroll-link {
-            font-size: 12.5px;
+        .fd-card-title {
+            margin: 0;
+            font-size: 20px;
             font-weight: 700;
-            color: var(--fd-primary);
-            text-decoration: underline;
-            transition: color 0.2s;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .fd-scroll-link:hover {
-            color: #0369a1;
+        .fd-card-subtitle {
+            margin: 4px 0 0 0;
+            font-size: 13.5px;
+            color: var(--fd-text-muted);
         }
-        .fd-card-custom-box-top {
-            margin-bottom: 12px;
+
+        /* Responsive 4-Column Feature Grid (Matching Screenshot) */
+        .fd-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px 24px;
+            box-sizing: border-box;
         }
-        .fd-card-custom-box-bottom {
-            margin-top: 14px;
+        .fd-grid-col {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
-        .fd-specbox {
-            margin: 40px auto 30px;
-            max-width: 1200px;
+        .fd-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 13.5px;
+            line-height: 1.45;
+            color: #334155;
+            font-weight: 500;
+        }
+        .fd-item svg, .fd-item .fd-check {
+            width: 17px;
+            height: 17px;
+            flex-shrink: 0;
+            margin-top: 1px;
+            color: var(--fd-green);
+        }
+
+        /* Server Backup / Advisory Notice Card */
+        .fd-notice-card {
+            background: #fffbeb;
+            border: 1px solid #fef08a;
+            border-left: 5px solid #eab308;
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            box-sizing: border-box;
+        }
+        .fd-notice-card.fd-notice-info {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            border-left-color: #3b82f6;
+        }
+        .fd-notice-icon {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            margin-top: 2px;
+            color: #ca8a04;
+        }
+        .fd-notice-info .fd-notice-icon {
+            color: #2563eb;
+        }
+        .fd-notice-body {
+            flex: 1;
+        }
+        .fd-notice-title {
+            margin: 0 0 6px 0;
+            font-size: 15px;
+            font-weight: 700;
+            color: #854d0e;
+        }
+        .fd-notice-info .fd-notice-title {
+            color: #1e40af;
+        }
+        .fd-notice-text {
+            margin: 0;
+            font-size: 13.5px;
+            line-height: 1.55;
+            color: #713f12;
+        }
+        .fd-notice-info .fd-notice-text {
+            color: #1e3a8a;
+        }
+
+        /* Extra Custom Blocks */
+        .fd-extra-card {
             background: #ffffff;
             border: 1px solid var(--fd-border);
             border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
-            overflow: hidden;
-            font-family: inherit;
-        }
-        .fd-specbox-header {
             padding: 24px 28px;
-            border-bottom: 1px solid var(--fd-border);
-            background: var(--fd-header-bg);
-        }
-        .fd-specbox-title {
-            margin: 0 0 4px 0;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--fd-header-title);
-        }
-        .fd-specbox-subtitle {
-            margin: 0;
-            font-size: 13.5px;
-            color: #64748b;
-        }
-        .fd-table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        .fd-spec-table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 13.5px;
-        }
-        .fd-spec-table th, .fd-spec-table td {
-            padding: 12px 18px;
-            border-bottom: 1px solid #f1f5f9;
-            vertical-align: middle;
-        }
-        .fd-spec-table thead th {
-            background: #ffffff;
-            font-weight: 600;
-            color: #334155;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        .fd-col-feature {
-            width: 30%;
-            min-width: 200px;
-            color: #1e293b;
-        }
-        .fd-col-plan {
-            text-align: center;
-            min-width: 140px;
-        }
-        .fd-plan-name {
-            font-size: 15px;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 4px;
-        }
-        .fd-plan-price {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--fd-primary);
-            margin-bottom: 8px;
-        }
-        .fd-category-row td {
-            background: var(--fd-category-bg) !important;
-            font-weight: 700;
-            font-size: 13px;
-            color: var(--fd-category-text) !important;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            padding: 10px 18px;
-            border-top: 1px solid var(--fd-border);
-            border-bottom: 1px solid var(--fd-border);
-        }
-        .fd-feature-row:hover td {
-            background-color: var(--fd-row-hover) !important;
-        }
-        .fd-feature-label {
-            color: #334155;
-            font-weight: 500;
-        }
-        .fd-feature-value {
-            text-align: center;
-            color: #0f172a;
-        }
-        .fd-val-yes {
-            color: var(--fd-bullet-icon);
-            font-weight: 700;
-        }
-        .fd-val-no {
-            color: #ef4444;
-            font-weight: 600;
-        }
-        .fd-val-text {
-            color: #1e293b;
-            font-weight: 500;
+            margin-bottom: 24px;
+            box-sizing: border-box;
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .fd-specbox {
-                margin: 20px 10px;
-                border-radius: 8px;
+        /* Tablet Breakpoint (2 columns) */
+        @media (max-width: 991px) {
+            .fd-grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px 20px;
             }
-            .fd-specbox-header {
-                padding: 16px 20px;
+            .fd-card {
+                padding: 22px 24px;
             }
-            .fd-spec-table th, .fd-spec-table td {
-                padding: 10px 12px;
-                font-size: 12.5px;
+        }
+
+        /* Mobile Breakpoint (1 column) */
+        @media (max-width: 600px) {
+            .fd-category-wrapper {
+                margin: 25px auto 15px auto;
+                padding: 0 10px;
+            }
+            .fd-grid-4 {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .fd-card {
+                padding: 18px 18px;
+                border-radius: 10px;
+            }
+            .fd-card-title {
+                font-size: 17.5px;
+            }
+            .fd-item {
+                font-size: 13px;
+            }
+            .fd-notice-card {
+                padding: 15px 16px;
+                gap: 12px;
+                flex-direction: column;
             }
         }
     </style>';
+
+    if (!empty($globalCss)) {
+        $css .= '<style id="featuredesk-custom-css">' . $globalCss . '</style>';
+    }
+
+    return $css;
 });
 
 /**
- * Footer Injection: Dynamic Cards Cleansing & Specification Matrix Rendering
+ * Footer Injection: Detects Category (gid) and dynamically renders HTML sections below pricing cards
  */
 add_hook('ClientAreaFooterOutput', 1, function ($vars) {
-    if (empty($vars['templatefile']) || !in_array($vars['templatefile'], ['products', 'viewcart', 'configureproduct'])) {
-        $reqUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-        if (strpos($reqUri, '/store/') === false && strpos($reqUri, 'cart.php') === false) {
-            return '';
-        }
+    // 1. Check if FeatureDesk is globally enabled
+    if (!featuredesk_is_enabled(featuredesk_get_setting('status', '1'))) {
+        return '';
+    }
+
+    // 2. Identify Product Group (gid)
+    $gid = null;
+    if (!empty($vars['gid'])) {
+        $gid = (int)$vars['gid'];
+    } elseif (isset($_GET['gid']) && is_numeric($_GET['gid'])) {
+        $gid = (int)$_GET['gid'];
+    } elseif (isset($_REQUEST['gid']) && is_numeric($_REQUEST['gid'])) {
+        $gid = (int)$_REQUEST['gid'];
+    }
+
+    // Attempt to extract gid from WHMCS product groups in template vars
+    if (!$gid && !empty($vars['productGroup']->id)) {
+        $gid = (int)$vars['productGroup']->id;
+    }
+
+    if (!$gid) {
+        return '';
     }
 
     try {
-        if (!Capsule::schema()->hasTable('mod_featuredesk_specs')) {
+        if (!Capsule::schema()->hasTable('mod_featuredesk_categories')) {
             return '';
         }
 
-        $specs = Capsule::table('mod_featuredesk_specs')
-            ->join('tblproducts', 'tblproducts.id', '=', 'mod_featuredesk_specs.product_id')
-            ->where('mod_featuredesk_specs.enabled', 1)
-            ->select(
-                'mod_featuredesk_specs.*',
-                'tblproducts.name as pname',
-                'tblproducts.gid as gid',
-                'tblproducts.id as pid'
-            )
-            ->get();
+        $groupConfig = Capsule::table('mod_featuredesk_categories')
+            ->where('group_id', $gid)
+            ->where('status', 1)
+            ->first();
 
-        if ($specs->isEmpty()) {
+        if (!$groupConfig) {
             return '';
         }
     } catch (\Exception $e) {
         return '';
     }
 
-    $productMap = [];
-    foreach ($specs as $s) {
-        // Raw highlights (could be array of lines or raw HTML string)
-        $hList = [];
-        $rawHighlights = (string)$s->card_highlights;
-        $isHtmlHighlights = false;
-        
-        $decodedH = json_decode($rawHighlights, true);
-        if (is_array($decodedH)) {
-            $hList = $decodedH;
-        } elseif (!empty($rawHighlights)) {
-            $hList = array_filter(array_map('trim', explode("\n", $rawHighlights)));
-        }
+    $featuresHtml = trim((string)$groupConfig->features_html);
+    $backupNoticeHtml = trim((string)$groupConfig->backup_notice_html);
+    $customCss = trim((string)$groupConfig->custom_css);
 
-        // Check if highlights is custom HTML block
-        $joinedH = is_array($hList) ? implode("", $hList) : (string)$rawHighlights;
-        if (strpos($joinedH, '<div') !== false || strpos($joinedH, '<ul') !== false || strpos($joinedH, '<table') !== false || strpos($joinedH, '<p') !== false) {
-            $isHtmlHighlights = true;
+    $extraBoxes = [];
+    if (!empty($groupConfig->extra_boxes)) {
+        $decoded = json_decode($groupConfig->extra_boxes, true);
+        if (is_array($decoded)) {
+            $extraBoxes = $decoded;
         }
-
-        // Detailed Specs
-        $dList = json_decode($s->detailed_specs, true);
-        $normDetails = [];
-        if (is_array($dList)) {
-            foreach ($dList as $item) {
-                if (isset($item['group']) && isset($item['name'])) {
-                    $g = $item['group'];
-                    $n = $item['name'];
-                    $v = isset($item['value']) ? $item['value'] : '';
-                    $gIcon = isset($item['group_icon']) ? $item['group_icon'] : '';
-                    $fIcon = isset($item['icon']) ? $item['icon'] : '';
-                    $normDetails[$g][$n] = [
-                        'val'       => $v,
-                        'cat_icon'  => $gIcon,
-                        'feat_icon' => $fIcon
-                    ];
-                }
-            }
-        }
-
-        $productMap[$s->pid] = [
-            'pid'                => (int)$s->pid,
-            'gid'                => (int)$s->gid,
-            'name'               => $s->pname,
-            'highlights'         => $hList,
-            'is_html_highlights' => $isHtmlHighlights,
-            'top_html'           => (string)$s->card_top_html,
-            'bottom_html'        => (string)$s->card_bottom_html,
-            'specs'              => $normDetails,
-        ];
     }
 
-    $cleanCards      = featuredesk_is_enabled(featuredesk_get_setting('clean_pricing_cards', '1'));
-    $showScroll      = featuredesk_is_enabled(featuredesk_get_setting('show_scroll_btn', '1'));
-    $bulletIconClass = featuredesk_get_setting('bullet_icon_class', 'fas fa-check-circle');
-    $boxTitle        = featuredesk_get_setting('box_title', 'Technical Specifications & Limit Comparison');
-    $boxSubtitle     = featuredesk_get_setting('box_subtitle', 'Transparent look at server resources, limits, and developer tooling across our plans.');
-    $theme           = featuredesk_get_setting('theme', 'modern_blue');
+    // If all sections are empty, do not inject anything
+    if (empty($featuresHtml) && empty($backupNoticeHtml) && empty($extraBoxes)) {
+        return '';
+    }
 
-    $payload = json_encode([
-        'products'          => $productMap,
-        'clean_cards'       => $cleanCards,
-        'show_scroll'       => $showScroll,
-        'bullet_icon_class' => $bulletIconClass,
-        'title'             => $boxTitle,
-        'subtitle'          => $boxSubtitle,
-        'theme'             => $theme,
-    ]);
+    // Build the rendered HTML
+    $output = '';
+
+    // Per-category custom CSS if present
+    if (!empty($customCss)) {
+        $output .= '<style id="fd-group-' . $gid . '-css">' . $customCss . '</style>';
+    }
+
+    $output .= '<div id="featuredesk-category-wrapper" class="fd-category-wrapper" data-gid="' . (int)$gid . '">';
+
+    // 1. Main Features HTML Box (e.g. 4-column checklist)
+    if (!empty($featuresHtml)) {
+        $output .= '<div class="fd-features-block">' . $featuresHtml . '</div>';
+    }
+
+    // 2. Server Backup Notice HTML Box
+    if (!empty($backupNoticeHtml)) {
+        $output .= '<div class="fd-backup-notice-block">' . $backupNoticeHtml . '</div>';
+    }
+
+    // 3. Dynamic Extra HTML Boxes
+    if (!empty($extraBoxes)) {
+        foreach ($extraBoxes as $box) {
+            if (!empty($box['status']) && !empty($box['html'])) {
+                $output .= '<div class="fd-extra-card">';
+                if (!empty($box['title'])) {
+                    $output .= '<div class="fd-card-header"><h3 class="fd-card-title">' . htmlspecialchars($box['title']) . '</h3></div>';
+                }
+                $output .= '<div class="fd-extra-content">' . $box['html'] . '</div>';
+                $output .= '</div>';
+            }
+        }
+    }
+
+    $output .= '</div>';
+
+    // Safe JSON encoded payload for client-side injection
+    $payloadJson = json_encode($output);
 
     return '
     <script id="featuredesk-runtime">
     (function() {
-        var FD_DATA = ' . $payload . ';
+        var FD_HTML = ' . $payloadJson . ';
 
-        function initFeatureDesk() {
-            var cards = document.querySelectorAll(".package, .product-card, .price-table");
-            if (!cards.length) return;
+        function injectFeatureDesk() {
+            if (document.getElementById("featuredesk-category-wrapper")) {
+                return; // Already injected
+            }
 
-            var matchedPlans = [];
+            // Target element below pricing cards
+            // Covers Standard Cart, Supreme, Modern, Universal, Lagom, Twenty-One, Six
+            var target = document.querySelector(".products") ||
+                         document.querySelector(".product-grid") ||
+                         document.querySelector(".products-wrapper") ||
+                         document.querySelector(".row.row-eq-height") ||
+                         document.querySelector(".packages-list") ||
+                         document.querySelector(".products-row") ||
+                         document.querySelector(".cart-body") ||
+                         (document.querySelector(".package") ? document.querySelector(".package").closest(".row") : null) ||
+                         (document.querySelector(".product") ? document.querySelector(".product").closest(".row") : null) ||
+                         document.querySelector("#order-standard_cart") ||
+                         document.querySelector(".main-content");
 
-            cards.forEach(function(card) {
-                var titleEl = card.querySelector(".package-title, .product-title, h3, h4");
-                if (!titleEl) return;
+            var tempDiv = document.createElement("div");
+            tempDiv.innerHTML = FD_HTML;
+            var nodeToInject = tempDiv.firstElementChild;
 
-                var titleText = titleEl.innerText.trim().toLowerCase();
-                var matched = null;
-
-                for (var pid in FD_DATA.products) {
-                    var p = FD_DATA.products[pid];
-                    if (titleText.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(titleText)) {
-                        matched = p;
-                        break;
-                    }
-                }
-
-                if (!matched) return;
-                matchedPlans.push(matched);
-
-                // Replace inside card content ONLY if highlights or custom boxes exist
-                var hasCustomContent = (matched.highlights && matched.highlights.length > 0) ||
-                                       (matched.top_html && matched.top_html.trim() !== "") ||
-                                       (matched.bottom_html && matched.bottom_html.trim() !== "");
-
-                // 1. Clean Long Descriptions (Hero Highlights & Custom Top/Bottom Boxes)
-                if (FD_DATA.clean_cards && hasCustomContent) {
-                    var contentEl = card.querySelector(".package-content") || card.querySelector(".product-desc") || card.querySelector(".package-body");
-                    if (contentEl && !card.querySelector(".fd-card-bullets") && !card.querySelector(".fd-card-custom-box-top") && !card.querySelector(".fd-custom-html-highlights")) {
-                        var html = "";
-
-                        // 1. Custom Top HTML Box (e.g. Free Domain Offer Box)
-                        if (matched.top_html && matched.top_html.trim() !== "") {
-                            html += "<div class=\"fd-card-custom-box-top\">" + matched.top_html + "</div>";
-                        }
-
-                        // 2. Highlights (Supports Text Lines with optional/custom icons OR Direct Custom HTML)
-                        if (matched.highlights && matched.highlights.length > 0) {
-                            if (matched.is_html_highlights) {
-                                html += "<div class=\"fd-custom-html-highlights\">" + matched.highlights.join("\n") + "</div>";
-                            } else {
-                                html += "<ul class=\"fd-card-bullets\">";
-                                matched.highlights.forEach(function(item) {
-                                    var hasExistingIcon = (item.indexOf("<i") !== -1 || item.indexOf("<svg") !== -1 || item.indexOf("icon") !== -1 || item.indexOf("<img") !== -1);
-                                    if (hasExistingIcon || !FD_DATA.bullet_icon_class || FD_DATA.bullet_icon_class === "none") {
-                                        html += "<li>" + item + "</li>";
-                                    } else {
-                                        html += "<li><i class=\"" + FD_DATA.bullet_icon_class + " fd-icon-check\"></i> " + item + "</li>";
-                                    }
-                                });
-                                html += "</ul>";
-                            }
-                        }
-
-                        // 3. Custom Bottom HTML Box (e.g. Backup Policy Warning Box)
-                        if (matched.bottom_html && matched.bottom_html.trim() !== "") {
-                            html += "<div class=\"fd-card-custom-box-bottom\">" + matched.bottom_html + "</div>";
-                        }
-
-                        contentEl.innerHTML = html;
-                    }
-                }
-
-                // 2. Card \'View Specs\' Link (Completely decoupled & independent of Clean Long Descriptions!)
-                if (FD_DATA.show_scroll && matched.specs && Object.keys(matched.specs).length > 0 && !card.querySelector(".fd-scroll-wrap")) {
-                    var scrollDiv = document.createElement("div");
-                    scrollDiv.className = "fd-scroll-wrap";
-                    scrollDiv.innerHTML = "<a href=\"#featuredesk-matrix-box\" class=\"fd-scroll-link\">View Full Tech Specs &darr;</a>";
-
-                    var botBox = card.querySelector(".fd-card-custom-box-bottom");
-                    var bullets = card.querySelector(".fd-card-bullets, .fd-custom-html-highlights");
-                    var footerEl = card.querySelector(".package-footer, .order-button, .btn-order, .package-actions");
-                    var cEl = card.querySelector(".package-content") || card.querySelector(".product-desc") || card.querySelector(".package-body");
-
-                    if (botBox) {
-                        botBox.parentNode.insertBefore(scrollDiv, botBox);
-                    } else if (bullets) {
-                        bullets.parentNode.insertBefore(scrollDiv, bullets.nextSibling);
-                    } else if (cEl) {
-                        cEl.appendChild(scrollDiv);
-                    } else if (footerEl) {
-                        footerEl.parentNode.insertBefore(scrollDiv, footerEl);
-                    } else {
-                        card.appendChild(scrollDiv);
-                    }
-                }
-            });
-
-            // 5. Bottom Spec Matrix Table
-            if (matchedPlans.length > 0 && !document.getElementById("featuredesk-matrix-box")) {
-                var allCats = {};
-                var catIcons = {};
-                var featIcons = {};
-
-                matchedPlans.forEach(function(p) {
-                    for (var cat in p.specs) {
-                        if (!allCats[cat]) allCats[cat] = [];
-                        for (var feat in p.specs[cat]) {
-                            var specObj = p.specs[cat][feat];
-                            if (specObj && typeof specObj === "object") {
-                                if (specObj.cat_icon && !catIcons[cat]) catIcons[cat] = specObj.cat_icon;
-                                if (specObj.feat_icon && !featIcons[cat + ":::" + feat]) featIcons[cat + ":::" + feat] = specObj.feat_icon;
-                            }
-                            if (allCats[cat].indexOf(feat) === -1) {
-                                allCats[cat].push(feat);
-                            }
-                        }
-                    }
-                });
-
-                var mHtml = "<div id=\"featuredesk-matrix-box\" class=\"fd-specbox fd-theme-" + FD_DATA.theme + "\">";
-                mHtml += "<div class=\"fd-specbox-header\">";
-                mHtml += "<h3 class=\"fd-specbox-title\"><i class=\"fas fa-microchip\" style=\"margin-right:8px; color:var(--fd-primary);\"></i>" + FD_DATA.title + "</h3>";
-                mHtml += "<p class=\"fd-specbox-subtitle\">" + FD_DATA.subtitle + "</p>";
-                mHtml += "</div>";
-
-                mHtml += "<div class=\"fd-table-responsive\"><table class=\"fd-spec-table\">";
-                mHtml += "<thead><tr><th class=\"fd-col-feature\">Specification & Limit</th>";
-                matchedPlans.forEach(function(p) {
-                    mHtml += "<th class=\"fd-col-plan\"><div class=\"fd-plan-name\">" + p.name + "</div></th>";
-                });
-                mHtml += "</tr></thead><tbody>";
-
-                for (var cat in allCats) {
-                    var cIcon = catIcons[cat] ? catIcons[cat] : "fas fa-folder-open";
-                    mHtml += "<tr class=\"fd-category-row\"><td colspan=\"" + (matchedPlans.length + 1) + "\"><i class=\"" + cIcon + "\" style=\"margin-right:8px; opacity:0.85;\"></i> " + cat + "</td></tr>";
-                    allCats[cat].forEach(function(feat) {
-                        var fIcon = featIcons[cat + ":::" + feat];
-                        var fIconHtml = fIcon ? "<i class=\"" + fIcon + "\" style=\"margin-right:8px; opacity:0.8; color:var(--fd-primary);\"></i> " : "";
-                        mHtml += "<tr class=\"fd-feature-row\">";
-                        mHtml += "<td class=\"fd-feature-label\">" + fIconHtml + feat + "</td>";
-                        matchedPlans.forEach(function(p) {
-                            var specVal = (p.specs[cat] && p.specs[cat][feat]) ? (typeof p.specs[cat][feat] === "object" ? p.specs[cat][feat].val : p.specs[cat][feat]) : "—";
-                            if (!specVal || specVal.trim() === "") specVal = "—";
-                            var valLow = specVal.toLowerCase().trim();
-                            var cell = "<span class=\"fd-val-text\">" + specVal + "</span>";
-                            if (valLow === "yes" || valLow === "true" || valLow === "enabled") {
-                                cell = "<span class=\"fd-val-yes\"><i class=\"fas fa-check-circle\"></i> Yes</span>";
-                            } else if (valLow === "no" || valLow === "false" || valLow === "disabled") {
-                                cell = "<span class=\"fd-val-no\"><i class=\"fas fa-times-circle\"></i> No</span>";
-                            }
-                            mHtml += "<td class=\"fd-feature-value\">" + cell + "</td>";
-                        });
-                        mHtml += "</tr>";
-                    });
-                }
-
-                mHtml += "</tbody></table></div></div>";
-
-                var wrapper = document.createElement("div");
-                wrapper.innerHTML = mHtml;
-                var boxNode = wrapper.firstElementChild;
-
-                var target = document.querySelector(".section.products") ||
-                             document.querySelector(".row.row-eq-height") ||
-                             document.querySelector(".packages-list") ||
-                             document.querySelector(".products-row") ||
-                             (document.querySelector(".package") ? document.querySelector(".package").closest(".row") : null) ||
-                             document.querySelector(".main-content");
-
-                if (target) {
-                    target.parentNode.insertBefore(boxNode, target.nextSibling);
-                } else {
-                    document.body.appendChild(boxNode);
-                }
+            if (target && target.parentNode) {
+                target.parentNode.insertBefore(nodeToInject, target.nextSibling);
+            } else {
+                var contentArea = document.querySelector("main") || document.querySelector("#main-body") || document.body;
+                contentArea.appendChild(nodeToInject);
             }
         }
 
         if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", initFeatureDesk);
+            document.addEventListener("DOMContentLoaded", injectFeatureDesk);
         } else {
-            initFeatureDesk();
+            injectFeatureDesk();
         }
-        setTimeout(initFeatureDesk, 500);
-        setTimeout(initFeatureDesk, 1500);
+
+        setTimeout(injectFeatureDesk, 400);
+        setTimeout(injectFeatureDesk, 1200);
     })();
     </script>';
 });

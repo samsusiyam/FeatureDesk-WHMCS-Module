@@ -2,23 +2,24 @@
   "schema": "1.1",
   "type": "whmcs-addons",
   "name": "featuredesk",
+  "version": "2.0.0",
   "license": "proprietary",
   "category": "products",
   "logo": {
     "filename": "logo.png"
   },
   "description": {
-    "name": "FeatureDesk - Smart Spec Box & Plan Matrix for WHMCS",
-    "tagline": "Transform cluttered pricing cards into clean hero highlights with a synchronized bottom technical specifications comparison matrix",
-    "long": "FeatureDesk is an ultra-modern WHMCS addon module by Bahari IT that declutters your hosting order forms. Instead of stuffing 20+ lines of technical specs into tall, messy pricing cards, FeatureDesk displays 3-5 clean highlight badges on the card and automatically renders an interactive, categorized Technical Specifications Matrix right below your plans.",
+    "name": "FeatureDesk - Category Spec Boxes & Server Notices",
+    "tagline": "Responsive 4-column feature checklists, server backup notices, and custom HTML boxes below WHMCS pricing cards",
+    "long": "FeatureDesk v2.0 is an ultra-modern WHMCS addon module by Bahari IT that renders custom responsive category feature checklists, server backup advisory notices, and dynamic HTML blocks directly below product cards per product group, leaving native product descriptions 100% untouched.",
     "features": [
-      "Product Edit Page integration: Configure card highlights and extended specs directly inside WHMCS Setup -> Products",
-      "Interactive comparison matrix rendered below pricing tables on cart / order forms",
-      "Clean, modern UI dashboard for managing all product specifications across product groups",
-      "Preset feature templates for cPanel Web Hosting, NVMe Turbo Hosting, Cloud VPS, and Dedicated Servers",
-      "Category-based tech specs (Hardware, Storage, Email & Domain limits, Performance & Security)",
-      "Interactive 'View Full Tech Specs' smooth scroll button on pricing cards",
-      "100% responsive, dark-mode ready, zero dependency modern CSS/JS architecture"
+      "Category-based custom HTML Feature Spec Boxes per WHMCS Product Group",
+      "Ready-to-use responsive 4-column Advanced Features checklist starter template",
+      "Dedicated Server Backup Notice box with responsive alert styling",
+      "Dynamic expandable custom HTML boxes per category",
+      "Strict zero-touch guarantee: native pricing cards and product descriptions remain untouched",
+      "100% responsive on mobile, tablet, and desktop viewports",
+      "One-click starter templates built directly into the admin dashboard"
     ]
   },
   "support": {
