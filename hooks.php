@@ -46,13 +46,27 @@ if (!function_exists('featuredesk_h')) {
     }
 }
 
+if (!function_exists('featuredesk_clean_html')) {
+    function featuredesk_clean_html($raw)
+    {
+        if (empty($raw)) {
+            return '';
+        }
+        $decoded = html_entity_decode((string)$raw, ENT_QUOTES, 'UTF-8');
+        if (strpos($decoded, '&lt;') !== false || strpos($decoded, '&gt;') !== false || strpos($decoded, '&quot;') !== false) {
+            $decoded = html_entity_decode($decoded, ENT_QUOTES, 'UTF-8');
+        }
+        return trim($decoded);
+    }
+}
+
 /**
  * Head CSS Injection: Scoped styles & responsive layouts
  */
 add_hook('ClientAreaHeadOutput', 1, function ($vars) {
     $maxWidth  = featuredesk_get_setting('container_max_width', '1200px');
     $primary   = featuredesk_get_setting('color_primary', '#0284c7');
-    $globalCss = featuredesk_get_setting('global_custom_css', '');
+    $globalCss = featuredesk_clean_html(featuredesk_get_setting('global_custom_css', ''));
 
     $css = '
     <style id="featuredesk-styles">
@@ -297,9 +311,9 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
         return '';
     }
 
-    $featuresHtml = trim((string)$groupConfig->features_html);
-    $backupNoticeHtml = trim((string)$groupConfig->backup_notice_html);
-    $customCss = trim((string)$groupConfig->custom_css);
+    $featuresHtml     = featuredesk_clean_html($groupConfig->features_html);
+    $backupNoticeHtml = featuredesk_clean_html($groupConfig->backup_notice_html);
+    $customCss        = featuredesk_clean_html($groupConfig->custom_css);
 
     $extraBoxes = [];
     if (!empty($groupConfig->extra_boxes)) {
@@ -337,12 +351,14 @@ add_hook('ClientAreaFooterOutput', 1, function ($vars) {
     // 3. Dynamic Extra HTML Boxes
     if (!empty($extraBoxes)) {
         foreach ($extraBoxes as $box) {
-            if (!empty($box['status']) && !empty($box['html'])) {
+            $bStatus = !empty($box['status']);
+            $bHtml   = featuredesk_clean_html(isset($box['html']) ? $box['html'] : '');
+            if ($bStatus && !empty($bHtml)) {
                 $output .= '<div class="fd-extra-card">';
                 if (!empty($box['title'])) {
-                    $output .= '<div class="fd-card-header"><h3 class="fd-card-title">' . htmlspecialchars($box['title']) . '</h3></div>';
+                    $output .= '<div class="fd-card-header"><h3 class="fd-card-title">' . htmlspecialchars($box['title'], ENT_QUOTES, 'UTF-8') . '</h3></div>';
                 }
-                $output .= '<div class="fd-extra-content">' . $box['html'] . '</div>';
+                $output .= '<div class="fd-extra-content">' . $bHtml . '</div>';
                 $output .= '</div>';
             }
         }
